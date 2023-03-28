@@ -1,0 +1,66 @@
+name: format and build
+
+on:
+   push:
+      branches:
+         - "*"
+
+jobs:
+   format:
+      runs-on: ubuntu-latest
+
+      steps:
+         - name: Checkout code
+           uses: actions/checkout@v3
+
+         - name: Setup Node.js
+           uses: actions/setup-node@v3
+           with:
+              node-version: 16
+
+         - name: Install pnpm
+           run: |
+              npm install -g pnpm
+
+         - name: Install dependencies
+           run: |
+              pnpm install
+
+         - name: Run Prettier
+           run: |
+              npm run format-github-action
+   build:
+      runs-on: ubuntu-latest
+
+      steps:
+         - name: Checkout code
+           uses: actions/checkout@v3
+
+         - name: Setup Node.js
+           uses: actions/setup-node@v3
+           with:
+              node-version: 16
+
+         - name: Install pnpm
+           run: |
+              npm install -g pnpm
+
+         - name: Install dependencies
+           run: |
+              pnpm install
+
+         - name: Run TypeScript
+           run: |
+              npm run build
+   notify:
+      runs-on: ubuntu-latest
+      needs: [format, build]
+      if: ${{ always() }}
+      steps:
+         - name: Notify
+           if: ${{ needs.format.result == 'failure' || needs.build.result == 'failure' }}
+           env:
+              DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_ERROR }}
+           uses: AdVision-Group/failed-check-discord-action@master
+           with:
+              args: "Syntax check failed!"

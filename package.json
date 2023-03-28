@@ -1,0 +1,45 @@
+{
+   "name": "ts-backend-template",
+   "version": "1.0.0",
+   "description": "",
+   "main": "index.js",
+   "scripts": {
+      "start": "node dist/index.js",
+      "build": "tsc",
+      "lint": "eslint --ext .ts,.js .",
+      "test": "vitest",
+      "test-github-action": "vitest --watch=false --passWithNoTests",
+      "format": "prettier --write .",
+      "format-github-action": "prettier --check .",
+      "type-test": "tsc -w --noEmit --project tsconfig.test.json",
+      "type-test-github-action": "tsc --noEmit --project tsconfig.test.json"
+   },
+   "keywords": [],
+   "author": "",
+   "license": "ISC",
+   "dependencies": {
+      "dotenv": "^16.0.3",
+      "typescript": "^4.9.5",
+      "vitest": "^0.29.2"
+   },
+   "devDependencies": {
+      "@types/node": "^18.13.0",
+      "@typescript-eslint/eslint-plugin": "^5.51.0",
+      "@typescript-eslint/parser": "^5.51.0",
+      "eslint": "^8.33.0",
+      "eslint-config-standard-with-typescript": "^34.0.0",
+      "eslint-plugin-import": "^2.27.5",
+      "eslint-plugin-n": "^15.6.1",
+      "eslint-plugin-promise": "^6.1.1",
+      "prettier": "2.8.3"
+   },
+   "prettier": {
+      "printWidth": 80,
+      "singleQuote": false,
+      "trailingComma": "all",
+      "tabWidth": 3,
+      "semi": false,
+      "arrowParens": "always",
+      "endOfLine": "lf"
+   }
+}
