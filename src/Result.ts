@@ -1,18 +1,20 @@
-abstract class _Result<T, E extends Error = Error> {
-   public static ok<Data>(data: Data): _Result<Data, Error> {
+export type ResultT<T, E extends Error = Error> = Ok<T, E> | Err<T, E>
+
+export abstract class Result<T, E extends Error = Error> {
+   public static ok<Data>(data: Data): ResultT<Data> {
       return new Ok(data)
    }
 
-   public static err<E extends Error>(err: E): _Result<null, E> {
+   public static err<E extends Error>(err: E): ResultT<unknown, E> {
       return new Err(err)
    }
 
    public static from<Data, E extends Error>(
       promise: Promise<Data>,
-   ): Promise<_Result<Data, E>> {
+   ): Promise<ResultT<Data, E>> {
       return promise
-         .then((data) => _Result.ok(data))
-         .catch((err) => _Result.err(err)) as Promise<_Result<Data, E>>
+         .then((data) => Result.ok(data))
+         .catch((err) => Result.err(err)) as Promise<ResultT<Data, E>>
    }
 
    public isOk(): this is Ok<T, E> {
@@ -23,27 +25,27 @@ abstract class _Result<T, E extends Error = Error> {
       return this instanceof Err
    }
 
-   public and<D>(result: _Result<D, E>): _Result<D, E> {
+   public and<D>(result: ResultT<D, E>): ResultT<D, E> {
       if (this.isOk()) {
          return result
       } else if (this.isErr()) {
-         return this as unknown as _Result<D, E>
+         return this as unknown as ResultT<D, E>
       }
       throw new Error("Invalid state")
    }
 
-   public andThen<D>(fn: (data: T) => _Result<D, E>): _Result<D, E> {
+   public andThen<D>(fn: (data: T) => ResultT<D, E>): ResultT<D, E> {
       if (this.isOk()) {
          return fn(this.value)
       } else if (this.isErr()) {
-         return this as unknown as _Result<D, E>
+         return this as unknown as ResultT<D, E>
       }
       throw new Error("Invalid state")
    }
 
-   public or<F extends Error>(result: _Result<T, F>): _Result<T, F> {
+   public or<F extends Error>(result: ResultT<T, F>): ResultT<T, F> {
       if (this.isOk()) {
-         return this as unknown as _Result<T, F>
+         return this as unknown as ResultT<T, F>
       } else if (this.isErr()) {
          return result
       }
@@ -51,10 +53,10 @@ abstract class _Result<T, E extends Error = Error> {
    }
 
    public orElse<F extends Error>(
-      fn: (err: E) => _Result<T, F>,
-   ): _Result<T, F> {
+      fn: (err: E) => ResultT<T, F>,
+   ): ResultT<T, F> {
       if (this.isOk()) {
-         return this as unknown as _Result<T, F>
+         return this as unknown as ResultT<T, F>
       } else if (this.isErr()) {
          return fn(this.err)
       }
@@ -62,20 +64,19 @@ abstract class _Result<T, E extends Error = Error> {
    }
 
    public chain<D>(
-      fn: (previous: _Result<T, E>) => _Result<D, E> | undefined,
-   ): _Result<D, E> {
-      const result = fn(this)
-      if (result === undefined) {
-         throw new Error("Cannot return undefined from chain")
+      fn: (previous: ResultT<T, E>) => ResultT<D, E>,
+   ): ResultT<D, E> {
+      if (!this.isOk() && !this.isErr()) {
+         throw new Error("Invalid state")
       }
-      return result
+      return fn(this)
    }
 
-   public match = <D>(match: { Ok: (data: T) => D; Err: (err: E) => D }): D => {
+   public match = <D>(match: { ok: (data: T) => D; err: (err: E) => D }): D => {
       if (this.isOk()) {
-         return match.Ok(this.value)
+         return match.ok(this.value)
       } else if (this.isErr()) {
-         return match.Err(this.err)
+         return match.err(this.err)
       }
       throw new Error("Invalid state")
    }
@@ -95,113 +96,106 @@ abstract class _Result<T, E extends Error = Error> {
    public abstract unwrapOr(value: T): T
    public abstract unwrapErr(): E
    public abstract unwrapOrThrow(): T
-   public abstract map<D>(fn: (data: T) => D): _Result<D, E>
-   public abstract mapErr<F extends Error>(fn: (err: E) => F): _Result<T, F>
+   public abstract map<D>(fn: (data: T) => D): ResultT<D, E>
+   public abstract mapErr<F extends Error>(fn: (err: E) => F): ResultT<T, F>
    public abstract mapOr<D>(fn: (data: T) => D, value: D): D
    public abstract mapOrElse<D>(fn: (data: T) => D, value: (err: E) => D): D
 }
 
-class Ok<T, E extends Error = Error> extends _Result<T, E> {
-   readonly value: T
+export class Ok<T, E extends Error = Error> extends Result<T, E> {
+   public readonly value: T
 
-   constructor(value: T) {
+   public constructor(value: T) {
       super()
       this.value = value
    }
 
-   map<D>(fn: (data: T) => D): Ok<D, E> {
+   public map<D>(fn: (data: T) => D): Ok<D, E> {
       return new Ok(fn(this.value))
    }
 
-   mapOr<D>(fn: (data: T) => D, value: D): D {
+   public mapOr<D>(fn: (data: T) => D, value: D): D {
       return fn(this.value)
    }
 
-   mapOrElse<D>(fn: (data: T) => D, value: (err: E) => D): D {
+   public mapOrElse<D>(fn: (data: T) => D, value: (err: E) => D): D {
       return fn(this.value)
    }
 
-   unwrap(): T {
+   public unwrap(): T {
       return this.value
    }
 
-   unwrapOr(value: T): T {
+   public unwrapOr(value: T): T {
       return this.value
    }
 
-   unwrapOrThrow(): T {
+   public unwrapOrThrow(): T {
       return this.value
    }
 
-   expect(message: string): T {
+   public expect(message: string): T {
       return this.value
    }
 
-   expectErr(message: string): E {
+   public expectErr(message: string): E {
       throw new Error(message)
    }
 
-   unwrapErr(): E {
+   public unwrapErr(): E {
       throw new Error("Cannot unwrap an Ok")
    }
 
-   mapErr<F extends Error>(fn: (err: E) => F): _Result<T, F> {
-      return this as unknown as _Result<T, F>
+   public mapErr<F extends Error>(fn: (err: E) => F): ResultT<T, F> {
+      return this as unknown as ResultT<T, F>
    }
 }
 
-class Err<T, E extends Error = Error> extends _Result<T, E> {
-   readonly err: E
+export class Err<T, E extends Error = Error> extends Result<T, E> {
+   public readonly err: E
 
-   constructor(err: E) {
+   public constructor(err: E) {
       super()
       this.err = err
    }
 
-   map<D>(fn: (data: T) => D): _Result<D, E> {
-      return this as unknown as _Result<D, E>
+   public map<D>(fn: (data: T) => D): ResultT<D, E> {
+      return this as unknown as ResultT<D, E>
    }
 
-   mapOr<D>(fn: (data: T) => D, value: D): D {
+   public mapOr<D>(fn: (data: T) => D, value: D): D {
       return value
    }
 
-   mapOrElse<D>(fn: (data: T) => D, value: (err: E) => D): D {
+   public mapOrElse<D>(fn: (data: T) => D, value: (err: E) => D): D {
       return value(this.err)
    }
 
-   mapErr<F extends Error>(fn: (err: E) => F): _Result<T, F> {
+   public mapErr<F extends Error>(fn: (err: E) => F): ResultT<T, F> {
       return new Err(fn(this.err))
    }
 
-   unwrapOr(value: T): T {
+   public unwrapOr(value: T): T {
       return value
    }
 
-   unwrapErr(): E {
+   public unwrapErr(): E {
       return this.err
    }
 
-   unwrap(): T {
+   public unwrap(): T {
       throw new Error("Cannot unwrap an Err")
    }
 
-   unwrapOrThrow(): T {
-      throw this.err
+   public unwrapOrThrow(): T {
+      throw this.err as Error
    }
 
-   expect(message: string): T {
+   public expect(message: string): T {
       throw new Error(message)
    }
 
-   expectErr(message: string): E {
+   public expectErr(message: string): E {
       return this.err
-   }
-}
-
-async function m() {
-   const x = _Result.ok("abc")
-   if (x.isOk()) {
-      console.log(x.value)
    }
 }
