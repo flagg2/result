@@ -1,5 +1,11 @@
 # @flagg2/result
 
+## 1.0.7
+
+### Patch Changes
+
+-  7564992: fix exports
+
 ## 1.0.6
 
 ### Patch Changes

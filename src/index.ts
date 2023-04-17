@@ -1,3 +1,5 @@
 import { Err, Ok, Result } from "./Result"
 
-export { Result, Err, Ok }
+type AsyncResult<T, E extends Error> = Promise<Result<T, E>>
+
+export { Result, Err, Ok, AsyncResult }
