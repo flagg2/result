@@ -1,5 +1,11 @@
 # @flagg2/result
 
+## 1.0.6
+
+### Patch Changes
+
+-  improve naming
+
 ## 1.0.5
 
 ### Patch Changes

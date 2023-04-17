@@ -1,11 +1,12 @@
 export type Result<T, E extends Error> = Ok<T, E> | Err<T, E>
 
-namespace Result {
-   export function ok<Data>(data: Data): Result<Data, never> {
+// eslint-disable-next-line @typescript-eslint/no-namespace, @typescript-eslint/no-redeclare
+export namespace Result {
+   export function ok<Data>(data: Data): Ok<Data, never> {
       return new Ok(data)
    }
 
-   export function err<E extends Error>(err: E): Result<never, E> {
+   export function err<E extends Error>(err: E): Err<never, E> {
       return new Err(err)
    }
 
@@ -26,30 +27,6 @@ namespace Result {
    }
 }
 export abstract class _Result<T, E extends Error> {
-   public static ok<Data>(data: Data): Result<Data, never> {
-      return new Ok(data)
-   }
-
-   public static err<E extends Error>(err: E): Result<never, E> {
-      return new Err(err)
-   }
-
-   public static async fromPromise<Data, E extends Error>(
-      promise: Promise<Data>,
-   ): Promise<Result<Data, E>> {
-      try {
-         return new Ok(await promise)
-      } catch (err) {
-         if (err instanceof Error) {
-            return new Err(err) as unknown as Result<Data, E>
-         }
-         return new Err(new Error("Unknown error")) as unknown as Result<
-            Data,
-            E
-         >
-      }
-   }
-
    public isOk(): this is Ok<T, E> {
       return this instanceof Ok
    }
@@ -193,7 +170,7 @@ export class Err<T, E extends Error> extends _Result<T, E> {
    }
 
    // TODO: return E and make it work
-   public instanceOf<IT extends new (...args: any[]) => any>(
+   public instanceOf<IT extends new (...args: any[]) => E>(
       cons: IT,
    ): this is Err<T, InstanceType<typeof cons>> {
       return this.error instanceof cons
@@ -277,12 +254,12 @@ class KokotError extends Error {
 
 async function shouldWork(bol: boolean, bol2: boolean) {
    if (bol) {
-      return _Result.ok(1)
+      return Result.ok(1)
    }
    if (bol2) {
-      const a = _Result.err(new TypeError("Nope"))
+      const a = Result.err(new TypeError("Nope"))
       return a
    }
-   const b = _Result.err(new KokotError("Nope"))
+   const b = Result.err(new KokotError("Nope"))
    return b
 }
