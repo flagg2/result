@@ -1,4 +1,4 @@
-import { Result, Err, Ok, ResultT } from "./Result"
+import { Result, Err, Ok, Result } from "./Result"
 
-export { Result, Err, Ok }
-export type { ResultT }
+export { Result as Result, Err, Ok }
+export type { Result as ResultT }
