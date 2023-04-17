@@ -1,25 +1,49 @@
-export type ResultT<T, E extends Error> = Ok<T, E> | Err<T, E>
+export type Result<T, E extends Error> = Ok<T, E> | Err<T, E>
 
-//TODO: this has to only work with promises, like this it creates too much overhead
-export abstract class Result<T, E extends Error> {
-   public static ok<Data>(data: Data): ResultT<Data, never> {
+namespace Result {
+   export function ok<Data>(data: Data): Result<Data, never> {
       return new Ok(data)
    }
 
-   public static err<E extends Error>(err: E): ResultT<never, E> {
+   export function err<E extends Error>(err: E): Result<never, E> {
+      return new Err(err)
+   }
+
+   export async function fromPromise<Data, E extends Error>(
+      promise: Promise<Data>,
+   ): Promise<Result<Data, E>> {
+      try {
+         return new Ok(await promise)
+      } catch (err) {
+         if (err instanceof Error) {
+            return new Err(err) as unknown as Result<Data, E>
+         }
+         return new Err(new Error("Unknown error")) as unknown as Result<
+            Data,
+            E
+         >
+      }
+   }
+}
+export abstract class _Result<T, E extends Error> {
+   public static ok<Data>(data: Data): Result<Data, never> {
+      return new Ok(data)
+   }
+
+   public static err<E extends Error>(err: E): Result<never, E> {
       return new Err(err)
    }
 
    public static async fromPromise<Data, E extends Error>(
       promise: Promise<Data>,
-   ): Promise<ResultT<Data, E>> {
+   ): Promise<Result<Data, E>> {
       try {
          return new Ok(await promise)
       } catch (err) {
          if (err instanceof Error) {
-            return new Err(err) as unknown as ResultT<Data, E>
+            return new Err(err) as unknown as Result<Data, E>
          }
-         return new Err(new Error("Unknown error")) as unknown as ResultT<
+         return new Err(new Error("Unknown error")) as unknown as Result<
             Data,
             E
          >
@@ -111,7 +135,7 @@ export abstract class Result<T, E extends Error> {
    // public abstract mapOrElse<D>(fn: (data: T) => D, value: (err: E) => D): D
 }
 
-export class Ok<T, E extends Error> extends Result<T, E> {
+export class Ok<T, E extends Error> extends _Result<T, E> {
    public readonly value: T
 
    public constructor(value: T) {
@@ -160,7 +184,7 @@ export class Ok<T, E extends Error> extends Result<T, E> {
    // }
 }
 
-export class Err<T, E extends Error> extends Result<T, E> {
+export class Err<T, E extends Error> extends _Result<T, E> {
    public readonly error: E
 
    public constructor(error: E) {
@@ -253,12 +277,12 @@ class KokotError extends Error {
 
 async function shouldWork(bol: boolean, bol2: boolean) {
    if (bol) {
-      return Result.ok(1)
+      return _Result.ok(1)
    }
    if (bol2) {
-      const a = Result.err(new TypeError("Nope"))
+      const a = _Result.err(new TypeError("Nope"))
       return a
    }
-   const b = Result.err(new KokotError("Nope"))
+   const b = _Result.err(new KokotError("Nope"))
    return b
 }

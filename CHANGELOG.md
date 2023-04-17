@@ -1,5 +1,11 @@
 # @flagg2/result
 
+## 1.0.5
+
+### Patch Changes
+
+-  make inferrence work
+
 ## 1.0.4
 
 ### Patch Changes
