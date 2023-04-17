@@ -2,11 +2,11 @@ export type ResultT<T, E extends Error> = Ok<T, E> | Err<T, E>
 
 //TODO: this has to only work with promises, like this it creates too much overhead
 export abstract class Result<T, E extends Error> {
-   public static ok<Data>(data: Data): Ok<Data, never> {
+   public static ok<Data>(data: Data): ResultT<Data, never> {
       return new Ok(data)
    }
 
-   public static err<E extends Error>(err: E): Err<never, E> {
+   public static err<E extends Error>(err: E): ResultT<never, E> {
       return new Err(err)
    }
 
@@ -168,7 +168,8 @@ export class Err<T, E extends Error> extends Result<T, E> {
       this.error = error
    }
 
-   public instanceOf<IT extends new (...args: any[]) => E>(
+   // TODO: return E and make it work
+   public instanceOf<IT extends new (...args: any[]) => any>(
       cons: IT,
    ): this is Err<T, InstanceType<typeof cons>> {
       return this.error instanceof cons
