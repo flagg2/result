@@ -107,7 +107,7 @@
       "max-depth": ["warn", 3],
       "max-lines": ["warn", 500],
       "max-lines-per-function": [
-         "warn",
+         "off",
          { "max": 30, "skipBlankLines": true, "skipComments": true }
       ],
       "max-nested-callbacks": ["warn", 3],

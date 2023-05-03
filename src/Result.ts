@@ -1,32 +1,59 @@
-export type Result<T, E extends Error> = Ok<T, E> | Err<T, E>
+export type Result<T, E = Error> = Ok<T, E> | Err<T, E>
 
 // eslint-disable-next-line @typescript-eslint/no-namespace, @typescript-eslint/no-redeclare
 export namespace Result {
-   export function ok<Data>(data: Data): Ok<Data, never> {
+   export function ok<T, E = never>(data: T): Result<T, E> {
       return new Ok(data)
    }
 
-   export function err<E extends Error>(err: E): Err<never, E> {
+   export function err<E, T = never>(err: E): Result<T, E> {
       return new Err(err)
    }
 
-   export async function fromPromise<Data, E extends Error>(
-      promise: Promise<Data>,
-   ): Promise<Result<Data, E>> {
+   export function from<T, E extends Error>(
+      fnOrPromise: Promise<T>,
+   ): Promise<Result<T, E>>
+   export function from<T, E extends Error>(
+      fnOrPromise: () => Promise<T>,
+   ): Promise<Result<T, E>>
+   export function from<T, E extends Error>(fnOrPromise: () => T): Result<T, E>
+   export function from<T, E = Error>(
+      fnOrPromise: (() => T | Promise<T>) | Promise<T>,
+   ): Result<T, E> | Promise<Result<T, E>> {
       try {
-         return new Ok(await promise)
+         if (fnOrPromise instanceof Promise) {
+            return new Promise<Result<T, E>>((resolve) => {
+               fnOrPromise
+                  .then((data) => {
+                     resolve(new Ok(data))
+                  })
+                  .catch((err) => {
+                     resolve(new Err(err))
+                  })
+            })
+         }
+         const result = fnOrPromise()
+         if (result instanceof Promise) {
+            return new Promise<Result<T, E>>((resolve) => {
+               result
+                  .then((data) => {
+                     resolve(new Ok(data))
+                  })
+                  .catch((err) => {
+                     resolve(new Err(err))
+                  })
+            })
+         }
+         return new Ok(result)
       } catch (err) {
          if (err instanceof Error) {
-            return new Err(err) as unknown as Result<Data, E>
+            return new Err(err) as unknown as Result<T, E>
          }
-         return new Err(new Error("Unknown error")) as unknown as Result<
-            Data,
-            E
-         >
+         return new Err(new Error("Unknown error")) as unknown as Result<T, E>
       }
    }
 }
-export abstract class _Result<T, E extends Error> {
+export abstract class _Result<T, E> {
    public isOk(): this is Ok<T, E> {
       return this instanceof Ok
    }
@@ -44,16 +71,16 @@ export abstract class _Result<T, E extends Error> {
    //    throw new Error("Invalid state")
    // }
 
-   // public andThen<D>(fn: (data: T) => ResultT<D, E>): ResultT<D, E> {
-   //    if (this.isOk()) {
-   //       return fn(this.value)
-   //    } else if (this.isErr()) {
-   //       return this as unknown as ResultT<D, E>
-   //    }
-   //    throw new Error("Invalid state")
-   // }
+   public andThen<D>(fn: (data: T) => Result<D, E>): Result<D, E> {
+      if (this.isOk()) {
+         return fn(this.value)
+      } else if (this.isErr()) {
+         return this as unknown as Result<D, E>
+      }
+      throw new Error("Invalid state")
+   }
 
-   // public or<F extends Error>(result: ResultT<T, F>): ResultT<T, F> {
+   // public or<F>(result: ResultT<T, F>): ResultT<T, F> {
    //    if (this.isOk()) {
    //       return this as unknown as ResultT<T, F>
    //    } else if (this.isErr()) {
@@ -62,7 +89,7 @@ export abstract class _Result<T, E extends Error> {
    //    throw new Error("Invalid state")
    // }
 
-   // public orElse<F extends Error>(
+   // public orElse<F>(
    //    fn: (err: E) => ResultT<T, F>,
    // ): ResultT<T, F> {
    //    if (this.isOk()) {
@@ -107,12 +134,12 @@ export abstract class _Result<T, E extends Error> {
    public abstract unwrapErr(): E
    public abstract unwrapOrThrow(): T
    // public abstract map<D>(fn: (data: T) => D): ResultT<D, E>
-   // public abstract mapErr<F extends Error>(fn: (err: E) => F): ResultT<T, F>
+   // public abstract mapErr<F>(fn: (err: E) => F): ResultT<T, F>
    // public abstract mapOr<D>(fn: (data: T) => D, value: D): D
    // public abstract mapOrElse<D>(fn: (data: T) => D, value: (err: E) => D): D
 }
 
-export class Ok<T, E extends Error> extends _Result<T, E> {
+export class Ok<T, E = Error> extends _Result<T, E> {
    public readonly value: T
 
    public constructor(value: T) {
@@ -156,12 +183,12 @@ export class Ok<T, E extends Error> extends _Result<T, E> {
       throw new Error("Cannot unwrap an Ok")
    }
 
-   // public mapErr<F extends Error>(fn: (err: E) => F): ResultT<T, F> {
+   // public mapErr<F>(fn: (err: E) => F): ResultT<T, F> {
    //    return this as unknown as ResultT<T, F>
    // }
 }
 
-export class Err<T, E extends Error> extends _Result<T, E> {
+export class Err<T, E = Error> extends _Result<T, E> {
    public readonly error: E
 
    public constructor(error: E) {
@@ -170,7 +197,7 @@ export class Err<T, E extends Error> extends _Result<T, E> {
    }
 
    // TODO: return E and make it work
-   public instanceOf<IT extends new (...args: any[]) => E>(
+   public instanceOf<IT extends new (...args: any[]) => any>(
       cons: IT,
    ): this is Err<T, InstanceType<typeof cons>> {
       return this.error instanceof cons
@@ -188,7 +215,7 @@ export class Err<T, E extends Error> extends _Result<T, E> {
    //    return value(this.error)
    // }
 
-   // public mapErr<F extends Error>(fn: (err: E) => F): ResultT<T, F> {
+   // public mapErr<F>(fn: (err: E) => F): ResultT<T, F> {
    //    return new Err(fn(this.error))
    // }
 
@@ -215,51 +242,4 @@ export class Err<T, E extends Error> extends _Result<T, E> {
    public expectErr(message: string): E {
       return this.error
    }
-}
-
-function waitASecAndReturn<T>(value: T): Promise<T> {
-   return new Promise((resolve) => {
-      setTimeout(() => {
-         resolve(value)
-      }, 1000)
-   })
-}
-
-async function main() {
-   const result = await shouldWork(true, true)
-
-   if (result.isErr()) {
-      if (result.instanceOf(KokotError)) {
-         const z = result.error
-         z.prop
-      }
-      const y = result.error
-      if (y instanceof KokotError) {
-         console.log("Kokot error")
-         y.cause
-      }
-      return
-   }
-   const x = result.value
-}
-
-class KokotError extends Error {
-   public readonly prop: string
-
-   constructor(message: string) {
-      super(message)
-      this.prop = "kokot"
-   }
-}
-
-async function shouldWork(bol: boolean, bol2: boolean) {
-   if (bol) {
-      return Result.ok(1)
-   }
-   if (bol2) {
-      const a = Result.err(new TypeError("Nope"))
-      return a
-   }
-   const b = Result.err(new KokotError("Nope"))
-   return b
 }
