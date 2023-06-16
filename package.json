@@ -1,6 +1,6 @@
 {
    "name": "@flagg2/result",
-   "version": "1.2.1",
+   "version": "1.2.3",
    "description": "",
    "main": "dist/index.js",
    "module": "dist/index.mjs",
@@ -8,6 +8,7 @@
    "scripts": {
       "lint": "tsc --noEmit",
       "build": "tsup src/index.ts --dts --format cjs,esm",
+      "test": "vitest",
       "release": "pnpm changeset && rm -r dist && pnpm run build && changeset version && changeset publish"
    },
    "keywords": [],

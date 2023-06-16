@@ -1,5 +1,14 @@
 export type Result<T, E = Error> = Ok<T, E> | Err<T, E>
 
+function isPromise<T>(value: unknown): value is Promise<T> {
+   return (
+      typeof value === "object" &&
+      value !== null &&
+      typeof (value as Promise<T>).then === "function" &&
+      typeof (value as Promise<T>).catch === "function"
+   )
+}
+
 // eslint-disable-next-line @typescript-eslint/no-namespace, @typescript-eslint/no-redeclare
 export namespace Result {
    export function ok<T, E = never>(data: T): Result<T, E> {
@@ -11,7 +20,7 @@ export namespace Result {
    }
 
    export function from<T, E extends Error>(
-      fnOrPromise: Promise<T>,
+      fnOrThenable: Promise<T>,
    ): Promise<Result<T, E>>
    export function from<T, E extends Error>(
       fnOrPromise: () => Promise<T>,
@@ -21,7 +30,7 @@ export namespace Result {
       fnOrPromise: (() => T | Promise<T>) | Promise<T>,
    ): Result<T, E> | Promise<Result<T, E>> {
       try {
-         if (fnOrPromise instanceof Promise) {
+         if (isPromise<T>(fnOrPromise)) {
             return new Promise<Result<T, E>>((resolve) => {
                fnOrPromise
                   .then((data) => {
@@ -33,7 +42,7 @@ export namespace Result {
             })
          }
          const result = fnOrPromise()
-         if (result instanceof Promise) {
+         if (isPromise<T>(result)) {
             return new Promise<Result<T, E>>((resolve) => {
                result
                   .then((data) => {

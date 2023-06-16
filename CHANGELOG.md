@@ -1,5 +1,17 @@
 # @flagg2/result
 
+## 1.2.3
+
+### Patch Changes
+
+-  attempt to fix types
+
+## 1.2.2
+
+### Patch Changes
+
+-  make result.from work from prisma promises
+
 ## 1.2.1
 
 ### Patch Changes
