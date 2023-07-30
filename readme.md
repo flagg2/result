@@ -1,3 +1,3 @@
 # Rust-like results for Typescript
 
-This library provides a Result type for Typescript, similar to the one in Rust.
+This library provides a Result type for Typescript, allowing for better and safer error handling.
