@@ -1,5 +1,11 @@
 # @flagg2/result
 
+## 1.2.4
+
+### Patch Changes
+
+-  add readme
+
 ## 1.2.3
 
 ### Patch Changes

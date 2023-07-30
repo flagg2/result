@@ -4,20 +4,18 @@ This library provides a Result type for Typescript, allowing for better and safe
 
 ## Why would I use this?
 
-
 Imagine having a function which you use to split time into seconds and minutes
 
-``` typescript
+```typescript
 // returns {hours: number, mins: number}
 function splitTimeWithoutResult(time: string) {
    const splitTime = time.split(":")
 
    return {
       hours: parseInt(splitTime[0], 10),
-      mins: parseInt(splitTime[1], 10)
+      mins: parseInt(splitTime[1], 10),
    }
 }
-
 
 // returns Result<{hours: number, mins: number}, Error>
 function splitTimeWithResult(time: string) {
@@ -26,7 +24,7 @@ function splitTimeWithResult(time: string) {
 
       return {
          hours: parseInt(splitTime[0], 10),
-         mins: parseInt(splitTime[1], 10)
+         mins: parseInt(splitTime[1], 10),
       }
    })
 }
@@ -38,7 +36,7 @@ Without result, you have to keep in mind that this function could throw, even th
 Somehow, the function get called with <strong>an incorrect argument</strong>, for example
 <strong>"2051"</strong> instead of <strong>"20:51"</strong>.
 
-``` typescript
+```typescript
 function faultyArgumentWithoutResult() {
    const time = "2051"
 
@@ -63,7 +61,7 @@ function faultyArgumentWithResultTypeError() {
    return splitTimeResult.value
 }
 
-function faultyArguemtnWithResultGraceful() {
+function faultyArgumetnWithResultGraceful() {
    const time = "2051"
 
    const splitTimeResult = splitTimeWithResult(time)
@@ -78,7 +76,7 @@ function faultyArguemtnWithResultGraceful() {
    // upwards, the choice is yours!
 
    console.error(splitTimeResult.error)
-   return null 
+   return null
 }
 ```
 
