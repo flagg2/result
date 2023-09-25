@@ -61,7 +61,7 @@ function faultyArgumentWithResultTypeError() {
    return splitTimeResult.value
 }
 
-function faultyArgumetnWithResultGraceful() {
+function faultyArgumentWithResultGraceful() {
    const time = "2051"
 
    const splitTimeResult = splitTimeWithResult(time)

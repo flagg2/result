@@ -1,4 +1,4 @@
-export type Result<T, E = Error> = Ok<T, E> | Err<T, E>
+export type Result<T, E = null> = Ok<T> | Err<E>
 
 function isPromise<T>(value: unknown): value is Promise<T> {
    return (
@@ -11,39 +11,39 @@ function isPromise<T>(value: unknown): value is Promise<T> {
 
 // eslint-disable-next-line @typescript-eslint/no-namespace, @typescript-eslint/no-redeclare
 export namespace Result {
-   export function ok<T, E = never>(data: T): Result<T, E> {
+   export function ok<T>(data: T): Ok<T> {
       return new Ok(data)
    }
 
-   export function err<E, T = never>(err: E): Result<T, E> {
-      return new Err(err)
+   export function err<E>(data: E, error?: Error | string): Err<E> {
+      return new Err(data, error)
    }
 
-   export function from<T, E extends Error>(
-      fnOrThenable: Promise<T>,
-   ): Promise<Result<T, E>>
-   export function from<T, E extends Error>(
-      fnOrPromise: () => Promise<T>,
-   ): Promise<Result<T, E>>
-   export function from<T, E extends Error>(fnOrPromise: () => T): Result<T, E>
-   export function from<T, E = Error>(
+   export function from<T>(fnOrThenable: Promise<T>): Promise<Result<T>>
+   export function from<T>(fnOrPromise: () => Promise<T>): Promise<Result<T>>
+   export function from<T, E>(fnOrPromise: () => T): Result<T>
+   export function from<T, E>(
       fnOrPromise: (() => T | Promise<T>) | Promise<T>,
-   ): Result<T, E> | Promise<Result<T, E>> {
+   ): Result<T> | Promise<Result<T>> {
       try {
          if (isPromise<T>(fnOrPromise)) {
-            return new Promise<Result<T, E>>((resolve) => {
+            return new Promise<Result<T>>((resolve) => {
                fnOrPromise
                   .then((data) => {
                      resolve(new Ok(data))
                   })
-                  .catch((err) => {
-                     resolve(new Err(err))
+                  .catch((error) => {
+                     if (error instanceof Error) {
+                        resolve(new Err(null, error))
+                        return
+                     }
+                     resolve(new Err(null, new Error(JSON.stringify(error))))
                   })
             })
          }
          const result = fnOrPromise()
          if (isPromise<T>(result)) {
-            return new Promise<Result<T, E>>((resolve) => {
+            return new Promise<Result<T>>((resolve) => {
                result
                   .then((data) => {
                      resolve(new Ok(data))
@@ -56,29 +56,22 @@ export namespace Result {
          return new Ok(result)
       } catch (err) {
          if (err instanceof Error) {
-            return new Err(err) as unknown as Result<T, E>
+            return new Err(null, err)
          }
-         return new Err(new Error("Unknown error")) as unknown as Result<T, E>
+         return new Err(null, new Error(JSON.stringify(err)))
       }
    }
 }
 export abstract class _Result<T, E> {
-   public isOk(): this is Ok<T, E> {
+   public abstract readonly value: T | E
+
+   public isOk(): this is Ok<T> {
       return this instanceof Ok
    }
 
-   public isErr(): this is Err<T, E> {
+   public isErr(): this is Err<E> {
       return this instanceof Err
    }
-
-   // public and<D>(result: ResultT<D, E>): ResultT<D, E> {
-   //    if (this.isOk()) {
-   //       return result
-   //    } else if (this.isErr()) {
-   //       return this as unknown as ResultT<D, E>
-   //    }
-   //    throw new Error("Invalid state")
-   // }
 
    public andThen<D>(fn: (data: T) => Result<D, E>): Result<D, E> {
       if (this.isOk()) {
@@ -89,66 +82,15 @@ export abstract class _Result<T, E> {
       throw new Error("Invalid state")
    }
 
-   // public or<F>(result: ResultT<T, F>): ResultT<T, F> {
-   //    if (this.isOk()) {
-   //       return this as unknown as ResultT<T, F>
-   //    } else if (this.isErr()) {
-   //       return result
-   //    }
-   //    throw new Error("Invalid state")
-   // }
-
-   // public orElse<F>(
-   //    fn: (err: E) => ResultT<T, F>,
-   // ): ResultT<T, F> {
-   //    if (this.isOk()) {
-   //       return this as unknown as ResultT<T, F>
-   //    } else if (this.isErr()) {
-   //       return fn(this.error)
-   //    }
-   //    throw new Error("Invalid state")
-   // }
-
-   // public chain<D>(
-   //    fn: (previous: ResultT<T, E>) => ResultT<D, E>,
-   // ): ResultT<D, E> {
-   //    if (!this.isOk() && !this.isErr()) {
-   //       throw new Error("Invalid state")
-   //    }
-   //    return fn(this)
-   // }
-
-   // public match = <D>(match: { ok: (data: T) => D; err: (err: E) => D }): D => {
-   //    if (this.isOk()) {
-   //       return match.ok(this.value)
-   //    } else if (this.isErr()) {
-   //       return match.err(this.error)
-   //    }
-   //    throw new Error("Invalid state")
-   // }
-
-   public unwrapOrNull(): T | null {
-      if (this.isOk()) {
-         return this.value
-      } else if (this.isErr()) {
-         return null
-      }
-      throw new Error("Invalid state")
-   }
-
    public abstract expect(message: string): T
    public abstract expectErr(message: string): E
    public abstract unwrap(): T
    public abstract unwrapOr(value: T): T
    public abstract unwrapErr(): E
    public abstract unwrapOrThrow(): T
-   // public abstract map<D>(fn: (data: T) => D): ResultT<D, E>
-   // public abstract mapErr<F>(fn: (err: E) => F): ResultT<T, F>
-   // public abstract mapOr<D>(fn: (data: T) => D, value: D): D
-   // public abstract mapOrElse<D>(fn: (data: T) => D, value: (err: E) => D): D
 }
 
-export class Ok<T, E = Error> extends _Result<T, E> {
+export class Ok<T> extends _Result<T, never> {
    public readonly value: T
 
    public constructor(value: T) {
@@ -156,18 +98,6 @@ export class Ok<T, E = Error> extends _Result<T, E> {
       this.value = value
    }
 
-   // public map<D>(fn: (data: T) => D): Ok<D, E> {
-   //    return new Ok(fn(this.value))
-   // }
-
-   // public mapOr<D>(fn: (data: T) => D, value: D): D {
-   //    return fn(this.value)
-   // }
-
-   // public mapOrElse<D>(fn: (data: T) => D, value: (err: E) => D): D {
-   //    return fn(this.value)
-   // }
-
    public unwrap(): T {
       return this.value
    }
@@ -184,71 +114,82 @@ export class Ok<T, E = Error> extends _Result<T, E> {
       return this.value
    }
 
-   public expectErr(message: string): E {
+   public expectErr(message: string): never {
       throw new Error(message)
    }
 
-   public unwrapErr(): E {
-      throw new Error("Cannot unwrap an Ok")
+   public unwrapErr(): never {
+      throw new Error("Cannot unwrap an Ok as an Err")
    }
 
-   // public mapErr<F>(fn: (err: E) => F): ResultT<T, F> {
-   //    return this as unknown as ResultT<T, F>
-   // }
+   public match<D>(fn: { ok: (data: T) => D; err: unknown }): D {
+      return fn.ok(this.value)
+   }
 }
 
-export class Err<T, E = Error> extends _Result<T, E> {
-   public readonly error: E
+export class Err<E> extends _Result<never, E> {
+   public readonly value: E
+   public readonly error: Error
 
-   public constructor(error: E) {
+   public constructor(value: E, error?: Error | string) {
       super()
-      this.error = error
+      this.value = value
+      if (error instanceof Error) {
+         this.error = new Error(error.message, {
+            cause: error,
+         })
+      } else if (typeof error === "string") {
+         this.error = new Error(error)
+      } else {
+         this.error = new Error("Unknown error")
+      }
    }
 
-   // TODO: return E and make it work
-   public instanceOf<IT extends new (...args: any[]) => any>(
-      cons: IT,
-   ): this is Err<T, InstanceType<typeof cons>> {
-      return this.error instanceof cons
-   }
-
-   // public map<D>(fn: (data: T) => D): ResultT<D, E> {
-   //    return this as unknown as ResultT<D, E>
-   // }
-
-   // public mapOr<D>(fn: (data: T) => D, value: D): D {
-   //    return value
-   // }
-
-   // public mapOrElse<D>(fn: (data: T) => D, value: (err: E) => D): D {
-   //    return value(this.error)
-   // }
-
-   // public mapErr<F>(fn: (err: E) => F): ResultT<T, F> {
-   //    return new Err(fn(this.error))
-   // }
-
-   public unwrapOr(value: T): T {
+   public unwrapOr(value: never): never {
       return value
    }
 
    public unwrapErr(): E {
-      return this.error
+      return this.value
    }
 
-   public unwrap(): T {
-      throw new Error("Cannot unwrap an Err")
+   public unwrap(): never {
+      throw new Error("Cannot unwrap an Err", { cause: this.error })
    }
 
-   public unwrapOrThrow(): T {
-      throw this.error as Error
+   public unwrapOrThrow(): never {
+      throw this.error
    }
 
-   public expect(message: string): T {
-      throw new Error(message)
+   public expect(message: string): never {
+      throw new Error(message, { cause: this.error })
    }
 
    public expectErr(message: string): E {
-      return this.error
+      return this.value
+   }
+
+   public match<D>(fn: { ok: unknown; err: (error: E) => D }): D {
+      return fn.err(this.value)
    }
 }
+
+// function x(s: boolean) {
+//    if (s) {
+//       return Result.ok(1)
+//    }
+//    return Result.err("2", new Error("Error"))
+// }
+
+// function y() {
+//    const result = x(false)
+
+//    const c = result.match({
+//       err: (err) => err,
+//       ok: (data) => "s",
+//    })
+
+//    console.log(c)
+// }
+
+// y()
