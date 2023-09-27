@@ -1,6 +1,6 @@
-# <p style="text-align: center;"> @flagg2/Result ![npm](https://img.shields.io/npm/v/@flagg2/result) </p>
+# @flagg2/result
 
-# <p style="text-align: center;"> ![npm](https://img.shields.io/npm/dw/%40flagg2%2Fresult) ![npm package minimized gzipped size (select exports)](https://img.shields.io/bundlejs/size/%40flagg2%2Fresult) ![NPM](https://img.shields.io/npm/l/%40flagg2%2Fresult) </p>
+# <p style="text-align: center;">![npm](https://img.shields.io/npm/v/@flagg2/result) ![npm](https://img.shields.io/npm/dw/%40flagg2%2Fresult) ![npm package minimized gzipped size (select exports)](https://img.shields.io/bundlejs/size/%40flagg2%2Fresult) ![NPM](https://img.shields.io/npm/l/%40flagg2%2Fresult) </p>
 
 This library provides a Result type for Typescript, allowing for better and safer error handling.
 

@@ -1,5 +1,17 @@
 # @flagg2/result
 
+## 1.4.0
+
+### Minor Changes
+
+-  fix readme
+
+## 1.3.0
+
+### Minor Changes
+
+-  Revamp the api, upgrade docs
+
 ## 1.2.5
 
 ### Patch Changes
