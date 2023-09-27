@@ -59,7 +59,7 @@ describe("From", () => {
       const result = Result.from(doThrow)
       expect(result.isOk()).toBe(false)
       expect(result.isErr()).toBe(true)
-      expect(result.unwrapOrNull()).toBe(null)
+      expect(result.value).toBe(null)
    })
    it("Should be able to create Result from a promise which does not throw", async () => {
       const result = await Result.from(promise)
@@ -71,7 +71,7 @@ describe("From", () => {
       const result = await Result.from(promiseThrow)
       expect(result.isOk()).toBe(false)
       expect(result.isErr()).toBe(true)
-      expect(result.unwrapOrNull()).toBe(null)
+      expect(result.value).toBe(null)
    })
    it("Should be able to create Result from a function which returns a promise that does not throw", async () => {
       const result = await Result.from(returnAfter100ms)
@@ -83,6 +83,8 @@ describe("From", () => {
       const result = await Result.from(throwAfter100ms)
       expect(result.isOk()).toBe(false)
       expect(result.isErr()).toBe(true)
-      expect(result.unwrapOrNull()).toBe(null)
+      expect(result.value).toBe(null)
+      try {
+      } catch (e) {}
    })
 })
