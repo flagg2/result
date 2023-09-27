@@ -1,5 +1,11 @@
 # @flagg2/result
 
+## 1.4.3
+
+### Patch Changes
+
+-  live up to 0 dependencies clainm
+
 ## 1.4.2
 
 ### Patch Changes
