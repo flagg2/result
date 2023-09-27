@@ -13,7 +13,7 @@
    },
    "keywords": [],
    "author": "",
-   "license": "ISC",
+   "license": "MIT",
    "dependencies": {
       "dotenv": "^16.0.3"
    },
