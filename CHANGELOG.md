@@ -1,5 +1,17 @@
 # @flagg2/result
 
+## 1.4.2
+
+### Patch Changes
+
+-  docs
+
+## 1.4.1
+
+### Patch Changes
+
+-  fix readme format
+
 ## 1.4.0
 
 ### Minor Changes

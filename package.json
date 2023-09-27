@@ -1,6 +1,6 @@
 {
    "name": "@flagg2/result",
-   "version": "1.4.0",
+   "version": "1.4.2",
    "description": "",
    "main": "dist/index.js",
    "module": "dist/index.mjs",
@@ -11,7 +11,17 @@
       "test": "vitest",
       "release": "pnpm changeset && rm -r dist && pnpm run build && changeset version && changeset publish"
    },
-   "keywords": [],
+   "keywords": [
+      "result",
+      "rust",
+      "typescript",
+      "type",
+      "maybe",
+      "monad",
+      "option",
+      "either",
+      "inference"
+   ],
    "author": "",
    "license": "MIT",
    "dependencies": {

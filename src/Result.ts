@@ -117,7 +117,7 @@ export abstract class _Result<T, E> {
    }
 
    /**
-    * Returns the contained `Ok` value, consuming the `self` value.
+    * Returns the contained `Ok` value.
     *
     * @throws If the value is an `Err`, throws an error alongisde its cause.
     */
@@ -133,7 +133,7 @@ export abstract class _Result<T, E> {
    public abstract unwrapOr<U>(defaultValue: T): T | U
 
    /**
-    * Returns the contained `Err` value, consuming the `self` value.
+    * Returns the contained `Err` value.
     *
     * @throws If the value is an `Ok`, throws an error.
     */
@@ -141,7 +141,7 @@ export abstract class _Result<T, E> {
    public abstract unwrapErr(): E
 
    /**
-    * Returns the contained `Ok` value, consuming the `self` value.
+    * Returns the contained `Ok` value.
     *
     * @throws If the value is an `Err`, throws an error with the provided message.
     */
@@ -149,7 +149,7 @@ export abstract class _Result<T, E> {
    public abstract expect(message: string): T
 
    /**
-    * Returns the contained `Err` value, consuming the `self` value.
+    * Returns the contained `Err` value.
     *
     * @throws If the value is an `Ok`, throws an error with the provided message.
     */
@@ -174,7 +174,7 @@ export abstract class _Result<T, E> {
     * @param fn The function to call if the result is an `Ok`.
     */
 
-   public abstract andThen<D>(fn: (data: T) => Result<D>): unknown
+   public abstract andThen<U>(fn: (data: T) => Result<U>): unknown
 
    /**
     * Maps a `Result<T, E>` to `Result<U, E>` by applying a function to a contained `Ok` value, leaving an `Err` value untouched.
@@ -226,19 +226,19 @@ export class Ok<T> extends _Result<T, never> {
       throw new Error("Cannot unwrap an Ok as an Err")
    }
 
-   public match<D>(fn: { ok: (value: T) => D; err: unknown }): D {
+   public match<U>(fn: { ok: (value: T) => U; err: unknown }): U {
       return fn.ok(this.value)
    }
 
-   public andThen<D>(fn: (data: T) => Result<D>): Result<D> {
+   public andThen<U>(fn: (data: T) => Result<U>): Result<U> {
       return fn(this.value)
    }
 
-   public map<D>(fn: (data: T) => D): Ok<D> {
+   public map<U>(fn: (data: T) => U): Ok<U> {
       return Result.ok(fn(this.value))
    }
 
-   public mapErr<D>(fn: unknown): this {
+   public mapErr(fn: unknown): this {
       return this
    }
 }
@@ -294,11 +294,11 @@ export class Err<E> extends _Result<never, E> {
       return this
    }
 
-   public map<D>(fn: unknown): this {
+   public map(fn: unknown): this {
       return this
    }
 
-   public mapErr<D>(fn: (error: E) => D): Err<D> {
+   public mapErr<F>(fn: (error: E) => F): Err<F> {
       return Result.err(fn(this.value))
    }
 }

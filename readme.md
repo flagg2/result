@@ -1,12 +1,16 @@
 # @flagg2/result
 
-# <p style="text-align: center;">![npm](https://img.shields.io/npm/v/@flagg2/result) ![npm](https://img.shields.io/npm/dw/%40flagg2%2Fresult) ![npm package minimized gzipped size (select exports)](https://img.shields.io/bundlejs/size/%40flagg2%2Fresult) ![NPM](https://img.shields.io/npm/l/%40flagg2%2Fresult) </p>
+![npm](https://img.shields.io/npm/v/@flagg2/result) ![npm](https://img.shields.io/npm/dw/%40flagg2%2Fresult) ![npm package minimized gzipped size (select exports)](https://img.shields.io/bundlejs/size/%40flagg2%2Fresult) ![NPM](https://img.shields.io/npm/l/%40flagg2%2Fresult)
 
 This library provides a Result type for Typescript, allowing for better and safer error handling.
 
-## Docs
+## Table of Contents
 
-Included in JSDoc. For an overview of the problem this package is trying to solve, see the [Usage](#Usage) section.
+-  [Features](#Features)
+-  [Usage](#Usage)
+-  [API](#API)
+   -  [Types](#Types)
+   -  [Methods](#Methods)
 
 ## Features
 
@@ -132,3 +136,32 @@ function faultyArgument() {
 As you can see, it is much harder to shoot yourself in the foot while handling errors, which at the end of the day is what typescript is all about.
 
 Moreover, where possible, the result return type gets <strong>inferred automatically</strong> for the best dev experience possible.
+
+## API
+
+### Types
+
+| Type                   | Description                                                                                         |
+| ---------------------- | --------------------------------------------------------------------------------------------------- |
+| `Result<T, E>`         | A type representing the result of a computation that may succeed or fail.                         |
+| `Ok<T>`                | A class representing a successful result of a computation.                                          |
+| `Err<E>`               | A class representing a failed result of a computation.                                              |
+
+### Methods
+
+| Method                                               | Description                                                                                         |
+| ---------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `Result.ok<T>(data: T): Ok<T>`                      | Creates a new `Ok` variant.                                                                        |
+| `Result.err<E = null>(data?: E, error?: Error \| string): Err<E>` | Creates a new `Err` variant. Its contained value defaults to `null` You can provide an option `error`, which can be useful for tracing errors                                                              |
+| `Result.from<T>(fnOrThenable: Promise<T>): Promise<Result<T>>` | Creates a `Result` from a function, a promise, or a promise-returning function. If an error is thrown at any point, it is caught and wrapped in an `Err`. Otherwise, the result is wrapped in an `Ok`. |
+| `isOk(): this is Ok<T>`                                   | Returns `true` if the result is an `Ok` variant. If true, casts the result as `Ok`                                                   |
+| `isErr(): this is Err<E>`                                  | Returns `true` if the result is an `Err` variant. If true, casts the result as `Err`                                                |
+| `unwrap(): T`                                       | Returns the contained `Ok` value. Throws an error if the value is an `Err`. |
+| `unwrapOr<U>(defaultValue: T): T \| U`                | Returns the contained `Ok` value or a provided default.                                            |
+| `unwrapErr(): E`                                    | Returns the contained `Err` value. Throws an error if the value is an `Ok`. |
+| `expect(message: string): T`                        | Returns the contained `Ok` value. Throws an error with the provided message if the value is an `Err`. |
+| `expectErr(message: string): E`                     | Returns the contained `Err` value. Throws an error with the provided message if the value is an `Ok`. |
+| `match<U>(fn: { ok: (value: T) => U; err: (value: E) => U }): U` | Calls an appropriate function based on the result based on if it is an `Ok` or an `Err`.        |
+| `andThen<U>(fn: (data: T) => Result<U>): unknown`   | Calls `fn` if the result is `Ok`, otherwise returns the `Err` .                        |
+| `map<U>(fn: (data: T) => U): Result<U, E>`            | Maps a `Result<T, E>` to `Result<U, E>` by applying a function to a contained `Ok` value, leaving an `Err` value untouched. |
+| `mapErr<F>(fn: (error: E) => F): Result<T, F>`        | Maps a `Result<T, E>` to `Result<T, F>` by applying a function to a contained `Err` value, leaving an `Ok` value untouched. |
