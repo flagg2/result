@@ -1,5 +1,29 @@
 # @flagg2/result
 
+## 1.5.1
+
+### Patch Changes
+
+-  fix type
+
+## 1.5.0
+
+### Minor Changes
+
+-  finalize api for now
+
+## 1.4.6
+
+### Patch Changes
+
+-  as const
+
+## 1.4.5
+
+### Patch Changes
+
+-  better error inferrence + from second arg
+
 ## 1.4.4
 
 ### Patch Changes

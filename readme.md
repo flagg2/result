@@ -4,15 +4,16 @@
 
 This library provides a Result type for Typescript, allowing for better and safer error handling.
 
-## Table of Contents
+# Table of Contents
 
 -  [Features](#Features)
 -  [Usage](#Usage)
 -  [API](#API)
-   -  [Types](#Types)
-   -  [Methods](#Methods)
+   -  [Result](#Result)
+   -  [Ok](#Ok)
+   -  [Err](#Err)
 
-## Features
+# Features
 
 -  Rust-like Result type
 -  Better error handling
@@ -22,7 +23,7 @@ This library provides a Result type for Typescript, allowing for better and safe
 -  Minimalistic
 -  Small package size
 
-## Usage
+# Usage
 
 Imagine having a function which you use to split time into seconds and minutes.
 We will look at one implementation which uses result and a second one which does not.
@@ -72,96 +73,254 @@ Let's look at the previous example with `Result`
 
 ```typescript
 function parseTime(time: string) {
-   try {
-      const splitTime = time.split(":")
-      return Result.ok(splitTime)
-   } catch (e) {
-      return Result.err()
+   const splitTime = time.split(":")
+   if (splitTime.length !== 2) {
+      return Result.err("SPLIT_ERROR")
    }
+
+   if (isNaN(parseInt(splitTime[0], 10)) || isNaN(parseInt(splitTime[1], 10))) {
+      return Result.err("PARSE_ERROR")
+   }
+
+   if (parseInt(splitTime[0], 10) > 23 || parseInt(splitTime[1], 10) > 59) {
+      return Result.err("VALUE_ERROR")
+   }
+
+   return Result.ok({
+      hours: parseInt(splitTime[0], 10),
+      mins: parseInt(splitTime[1], 10),
+   })
 }
 ```
 
-or the shorthand version
+Now, using the Result pattern, we are forced to deal with the fact that it <strong> could </strong> fail at <strong> compilation time </strong>.
+
+Better yet, we know exactly which errors can occur and we can handle them accordingly.
+
+For example:
 
 ```typescript
-function parseTime(time: string) {
-   return Result.from(() => time.split(":"))
-}
-```
-
-Now using this function, we are forced to deal with the fact that it <strong> could </strong> fail at <strong> compilation time </strong>.
-
-```typescript
-// Returns {hours: number, mins: number} | null,
 function faultyArgument() {
    const time = "2051"
 
    const result = parseTime(time)
-
-   // Value is typed as {hours: number, mins: number} | null,
-   // indicating that the value could be absent due to an error
-
-   return result.value
-}
-```
-
-This is much better, because we get a clear indication that the function can fail. Better yet, we can gracefully
-handle the error by ourselves
-
-```typescript
-// Returns {hours: number, mins: number}
-function faultyArgument() {
-   const time = "2051"
-
-   const result = splitTimeWithResult(time)
+   // type is Result<{hours: number, mins: number}, "SPLIT_ERROR" | "PARSE_ERROR" | "VALUE_ERROR">
 
    // Here you gracefully handle the error case
 
-   if (result.isOk()) {
-      // The type of value here gets inferred as {hours: number, mins: number}
+   if (result.isErr()) {
+      // errValue is only available after the type system is sure that the result is an Err
+      switch (result.errValue) {
+         case "SPLIT_ERROR":
+            console.log("The time was not in the correct format")
+            break
+         case "PARSE_ERROR":
+            console.log("The time contained non-numeric characters")
+            break
+         case "VALUE_ERROR":
+            console.log("The time contained invalid values")
+            break
+      }
 
-      return result.value
+      return
    }
 
-   // Now the type of result.value is always null!
-   // Here you could return the null, a choose a sensible default (which I did here)
+   // Here the type system is sure that the result is an Ok, and we get access to the "value" property
 
-   return {
-      hours: 0,
-      mins: 0,
-   }
+   const { hours, mins } = result.value
+
+   console.log(`The time is ${hours}:${mins}`)
 }
 ```
 
-As you can see, it is much harder to shoot yourself in the foot while handling errors, which at the end of the day is what typescript is all about.
+As you can see, it is much harder to shoot yourself in the foot while handling errors, making our code much more robust.
 
-Moreover, where possible, the result return type gets <strong>inferred automatically</strong> for the best dev experience possible.
+Whenever possible, the result return type gets <strong>inferred automatically</strong> for the best dev experience possible.
 
-## API
+# Base Classes
 
-### Types
+## Result<T, E>
 
-| Type                   | Description                                                                                         |
-| ---------------------- | --------------------------------------------------------------------------------------------------- |
-| `Result<T, E>`         | A type representing the result of a computation that may succeed or fail.                         |
-| `Ok<T>`                | A class representing a successful result of a computation.                                          |
-| `Err<E>`               | A class representing a failed result of a computation.                                              |
+A class representing a computation which may succeed or fail.
 
-### Methods
+## Ok<T\>
 
-| Method                                               | Description                                                                                         |
-| ---------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `Result.ok<T>(data: T): Ok<T>`                      | Creates a new `Ok` variant.                                                                        |
-| `Result.err<E = null>(data?: E, error?: Error \| string): Err<E>` | Creates a new `Err` variant. Its contained value defaults to `null` You can provide an option `error`, which can be useful for tracing errors                                                              |
-| `Result.from<T>(fnOrThenable: Promise<T>): Promise<Result<T>>` | Creates a `Result` from a function, a promise, or a promise-returning function. If an error is thrown at any point, it is caught and wrapped in an `Err`. Otherwise, the result is wrapped in an `Ok`. |
-| `isOk(): this is Ok<T>`                                   | Returns `true` if the result is an `Ok` variant. If true, casts the result as `Ok`                                                   |
-| `isErr(): this is Err<E>`                                  | Returns `true` if the result is an `Err` variant. If true, casts the result as `Err`                                                |
-| `unwrap(): T`                                       | Returns the contained `Ok` value. Throws an error if the value is an `Err`. |
-| `unwrapOr<U>(defaultValue: T): T \| U`                | Returns the contained `Ok` value or a provided default.                                            |
-| `unwrapErr(): E`                                    | Returns the contained `Err` value. Throws an error if the value is an `Ok`. |
-| `expect(message: string): T`                        | Returns the contained `Ok` value. Throws an error with the provided message if the value is an `Err`. |
-| `expectErr(message: string): E`                     | Returns the contained `Err` value. Throws an error with the provided message if the value is an `Ok`. |
-| `match<U>(fn: { ok: (value: T) => U; err: (value: E) => U }): U` | Calls an appropriate function based on the result based on if it is an `Ok` or an `Err`.        |
-| `andThen<U>(fn: (data: T) => Result<U>): unknown`   | Calls `fn` if the result is `Ok`, otherwise returns the `Err` .                        |
-| `map<U>(fn: (data: T) => U): Result<U, E>`            | Maps a `Result<T, E>` to `Result<U, E>` by applying a function to a contained `Ok` value, leaving an `Err` value untouched. |
-| `mapErr<F>(fn: (error: E) => F): Result<T, F>`        | Maps a `Result<T, E>` to `Result<T, F>` by applying a function to a contained `Err` value, leaving an `Ok` value untouched. |
+A class representing a successful computation.
+
+## Err<E\>
+
+A class representing a failed computation.
+
+# API
+
+## Result
+
+### Result.ok()
+
+Creates a new `Ok` variant;
+
+```typescript
+ static ok(value: T): Ok<T>
+```
+
+---
+
+### Result.err()
+
+Creates a new `Err` variant; Optionally takes an `origin` argument which is the original error that was thrown.
+
+```typescript
+ static err(errValue: E, origin?: Error): Err<E>
+```
+
+---
+
+### Result.from()
+
+```typescript
+ static from<T>(fnOrThenable: Promise<T>): Promise<Result<T>>
+```
+
+Creates a `Result` from a function, a promise, or a promise-returning function. If an error is thrown at any point, it is caught and wrapped in an `Err`. Otherwise, the result is wrapped in an `Ok`.
+
+---
+
+### Result.isOk()
+
+Returns `true` if the result is an `Ok` variant. If true, casts the result as `Ok`
+
+```typescript
+   isOk(): this is Ok<T>
+```
+
+---
+
+### Result.isErr()
+
+Returns `true` if the result is an `Err` variant. If true, casts the result as `Err`
+
+```typescript
+   isErr(): this is Err<E>
+```
+
+---
+
+### Result.unwrap()
+
+Returns the contained `Ok` value. Throws an error if the value is an `Err`.
+
+```typescript
+   unwrap(): T
+```
+
+---
+
+### Result.unwrapErr()
+
+Returns the contained `Err` value. Throws an error if the value is an `Ok`.
+
+```typescript
+   unwrapErr(): E
+```
+
+---
+
+### Result.unwrapOr()
+
+Returns the contained `Ok` value. If the value is an `Err`, returns the provided default value.
+
+```typescript
+   unwrapOr(defaultValue: T): T
+```
+
+---
+
+### Result.expect()
+
+Returns the contained `Ok` value. If the value is an `Err`, throws an error with the provided message.
+
+```typescript
+   expect(message: string): T
+```
+
+---
+
+### Result.expectErr()
+
+Returns the contained `Err` value. If the value is an `Ok`, throws an error with the provided message.
+
+```typescript
+   expectErr(message: string): E
+```
+
+---
+
+### Result.match()
+
+Calls the appropriate function based on the result based on if it is an `Ok` or an `Err`.
+
+```typescript
+   match<U>(fn: { ok: (value: T) => U; err: (errValue: E) => U }): U
+```
+
+---
+
+### Result.andThen()
+
+Calls the provided function if the result is an `Ok`. If the result is an `Err`, returns the `Err` value.
+
+```typescript
+   andThen<U>(fn: (value: T) => Result<U, E>): Result<U, E>
+```
+
+---
+
+### Result.map()
+
+Maps a `Result<T, E>` to `Result<U, E>` by applying a function to a contained `Ok` value, leaving an `Err` value untouched.
+
+```typescript
+   map<U>(fn: (value: T) => U): Result<U, E>
+```
+
+---
+
+### Result.mapErr()
+
+Maps a `Result<T, E>` to `Result<T, F>` by applying a function to a contained `Err` value, leaving an `Ok` value untouched.
+
+```typescript
+   mapErr<F>(fn: (errValue: E) => F): Result<T, F>
+```
+
+## Ok
+
+### Ok.value
+
+The value contained in the `Ok` variant.
+
+```typescript
+value: T
+```
+
+---
+
+## Err
+
+### Err.errValue
+
+The value contained in the `Err` variant.
+
+```typescript
+errValue: E
+```
+
+---
+
+### Err.origin
+
+The original error that was thrown.
+
+```typescript
+origin: Error
+```

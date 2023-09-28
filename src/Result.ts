@@ -18,24 +18,24 @@ export namespace Result {
     * Creates a new `Ok` variant.
     *
     * @typeparam T The type of the value contained in the `Ok`.
-    * @param data The value to contain in the `Ok`.
+    * @param value The value to contain in the `Ok`.
     */
-   export function ok<T>(data: T): Ok<T> {
-      return new Ok(data)
+   export function ok<T>(value: T): Ok<T> {
+      return new Ok(value)
    }
 
    /**
     * Creates a new `Err` variant.
     *
     * @typeparam E The type of the value contained in the `Err`.
-    * @param data The value to contain in the `Err`.
-    * @param error An optional error to contain in the `Err`.
+    * @param errValue The value to contain in the `Err`.
+    * @param origin An optional error to contain in the `Err`.
     */
-   export function err<E = null>(
-      data: E = null as E,
-      error?: Error | string,
+   export function err<const E = null>(
+      errValue: E = null as E,
+      origin?: unknown,
    ): Err<E> {
-      return new Err(data, error)
+      return new Err(errValue, origin)
    }
 
    /**
@@ -43,51 +43,61 @@ export namespace Result {
     * If an error is thrown at any point, it is caught and wrapped in an `Err`.
     * Otherwise, the result is wrapped in an `Ok`.
     *
-    * @param fnOrThenable A function, a promise, or a promise-returning function.
+    * @param fnOrPromise A function, a promise, or a promise-returning function.
     */
-   export function from<T>(fnOrThenable: Promise<T>): Promise<Result<T>>
-   export function from<T>(fnOrPromise: () => Promise<T>): Promise<Result<T>>
-   export function from<T, E>(fnOrPromise: () => T): Result<T>
-   export function from<T, E>(
+   export function from<T, const E>(
+      fnOrPromise: Promise<T> | (() => Promise<T>),
+      errValue?: E,
+   ): Promise<Result<T, E>>
+
+   export function from<T, const E>(
+      fnOrPromise: () => T,
+      errValue?: E,
+   ): Result<T, E>
+
+   export function from<T, const E>(
       fnOrPromise: (() => T | Promise<T>) | Promise<T>,
-   ): Result<T> | Promise<Result<T>> {
+      errValue = null as E,
+   ): Result<T, E> | Promise<Result<T, E>> {
       try {
          if (isPromise<T>(fnOrPromise)) {
-            return new Promise<Result<T>>((resolve) => {
+            return new Promise<Result<T, E>>((resolve) => {
                fnOrPromise
                   .then((data) => {
                      resolve(new Ok(data))
                   })
                   .catch((error) => {
                      if (error instanceof Error) {
-                        resolve(new Err(null, error))
+                        resolve(new Err(errValue, error))
                         return
                      }
-                     resolve(new Err(null, new Error(JSON.stringify(error))))
+                     resolve(
+                        new Err(errValue, new Error(JSON.stringify(error))),
+                     )
                   })
             })
          }
          const result = fnOrPromise()
          if (isPromise<T>(result)) {
-            return new Promise<Result<T>>((resolve) => {
+            return new Promise<Result<T, E>>((resolve) => {
                result
                   .then((data) => {
                      resolve(new Ok(data))
                   })
                   .catch((err) => {
                      if (err instanceof Error) {
-                        resolve(new Err(null, err))
+                        resolve(new Err(errValue, err))
                      }
-                     resolve(new Err(null, new Error(JSON.stringify(err))))
+                     resolve(new Err(errValue, new Error(JSON.stringify(err))))
                   })
             })
          }
          return new Ok(result)
       } catch (err) {
          if (err instanceof Error) {
-            return new Err(null, err)
+            return new Err(errValue, err)
          }
-         return new Err(null, new Error(JSON.stringify(err)))
+         return new Err(errValue, new Error(JSON.stringify(err)))
       }
    }
 }
@@ -98,8 +108,6 @@ export namespace Result {
  * A class representing the result of a computation.
  */
 export abstract class _Result<T, E> {
-   public abstract readonly value: T | E
-
    /**
     * Returns `true` if the result is an `Ok` variant.
     */
@@ -163,10 +171,10 @@ export abstract class _Result<T, E> {
     * @param fn.err The function to call if the result is an `Err`.
     */
 
-   public abstract match<D>(fn: {
-      ok: (value: T) => D
-      err: (value: E) => D
-   }): D
+   public abstract match<U, V>(fn: {
+      ok: (value: T) => U
+      err: (errValue: E) => V
+   }): U | V
 
    /**
     * Calls op if the result is Ok, otherwise returns the Err value of self.
@@ -174,7 +182,7 @@ export abstract class _Result<T, E> {
     * @param fn The function to call if the result is an `Ok`.
     */
 
-   public abstract andThen<U>(fn: (data: T) => Result<U>): unknown
+   public abstract andThen<U>(fn: (value: T) => Result<U>): unknown
 
    /**
     * Maps a `Result<T, E>` to `Result<U, E>` by applying a function to a contained `Ok` value, leaving an `Err` value untouched.
@@ -182,7 +190,7 @@ export abstract class _Result<T, E> {
     * @param fn The function to call if the result is an `Ok`.
     */
 
-   public abstract map(fn: (data: T) => unknown): unknown
+   public abstract map(fn: (value: T) => unknown): unknown
 
    /**
     * Maps a `Result<T, E>` to `Result<T, F>` by applying a function to a contained `Err` value, leaving an `Ok` value untouched.
@@ -190,7 +198,7 @@ export abstract class _Result<T, E> {
     * @param fn The function to call if the result is an `Err`.
     */
 
-   public abstract mapErr(fn: (error: E) => unknown): unknown
+   public abstract mapErr(fn: (errValue: E) => unknown): unknown
 }
 
 /**
@@ -248,46 +256,42 @@ export class Ok<T> extends _Result<T, never> {
  *
  * @typeparam E The type of the value contained in the `Err`.
  */
-export class Err<E> extends _Result<never, E> {
-   public readonly value: E
-   public readonly error: Error
+export class Err<const E> extends _Result<never, E> {
+   public readonly errValue: E
+   public readonly origin: Error
 
-   public constructor(value: E = null as E, error?: Error | string) {
+   public constructor(errValue: E = null as E, origin?: unknown) {
       super()
-      this.value = value
-      if (error instanceof Error) {
-         this.error = new Error(error.message, {
-            cause: error,
-         })
-      } else if (typeof error === "string") {
-         this.error = new Error(error)
+      this.errValue = errValue
+      if (origin instanceof Error) {
+         this.origin = origin
       } else {
-         this.error = new Error("Unknown error")
+         this.origin = new Error("Unspecified error")
       }
    }
 
-   public unwrapOr<T>(value: T): T {
-      return value
+   public unwrapOr<T>(errValue: T): T {
+      return errValue
    }
 
    public unwrapErr(): E {
-      return this.value
+      return this.errValue
    }
 
    public unwrap(): never {
-      throw new Error("Cannot unwrap an Err", { cause: this.error })
+      throw new Error("Cannot unwrap an Err", { cause: this.origin })
    }
 
    public expect(message: string): never {
-      throw new Error(message, { cause: this.error })
+      throw new Error(message, { cause: this.origin })
    }
 
    public expectErr(message: string): E {
-      return this.value
+      return this.errValue
    }
 
-   public match<D>(fn: { ok: unknown; err: (value: E) => D }): D {
-      return fn.err(this.value)
+   public match<V>(fn: { ok: unknown; err: (errValue: E) => V }): V {
+      return fn.err(this.errValue)
    }
 
    public andThen(fn: unknown): this {
@@ -298,21 +302,30 @@ export class Err<E> extends _Result<never, E> {
       return this
    }
 
-   public mapErr<F>(fn: (error: E) => F): Err<F> {
-      return Result.err(fn(this.value))
+   public mapErr<const F>(fn: (errValue: E) => F): Err<F> {
+      return Result.err(fn(this.errValue), this.origin)
    }
 }
 
-function x(s: boolean, b: boolean = true) {
-   if (s) {
-      return Result.ok(1)
-   }
-
-   return Result.err()
+function deep1() {
+   return Result.from(() => {
+      throw new Error("deep1")
+      return 1
+   }, "deep1")
 }
 
-function y() {
-   const result = x(true).map((data) => "3")
+function deep2() {
+   return deep1().mapErr((err) => {
+      return err
+   })
 }
 
-y()
+function deep3() {
+   return deep2()
+}
+
+const x = deep3()
+
+if (x.isErr()) {
+   console.log(x.value)
+}
