@@ -234,7 +234,7 @@ export class Ok<T> extends _Result<T, never> {
       throw new Error("Cannot unwrap an Ok as an Err")
    }
 
-   public match<U>(fn: { ok: (value: T) => U; err: unknown }): U {
+   public match<U, V>(fn: { ok: (value: T) => U; err: unknown }): V | U {
       return fn.ok(this.value)
    }
 
@@ -290,7 +290,7 @@ export class Err<const E> extends _Result<never, E> {
       return this.errValue
    }
 
-   public match<V>(fn: { ok: unknown; err: (errValue: E) => V }): V {
+   public match<U, V>(fn: { ok: unknown; err: (err: E) => V }): V | U {
       return fn.err(this.errValue)
    }
 
@@ -307,25 +307,32 @@ export class Err<const E> extends _Result<never, E> {
    }
 }
 
-function deep1() {
-   return Result.from(() => {
-      throw new Error("deep1")
-      return 1
-   }, "deep1")
-}
+// function deep1() {
+//    return Result.from(() => {
+//       throw new Error("deep1")
+//       return 1
+//    }, "deep1")
+// }
 
-function deep2() {
-   return deep1().mapErr((err) => {
-      return err
-   })
-}
+// function deep2() {
+//    return deep1().mapErr((err) => {
+//       return err
+//    })
+// }
 
-function deep3() {
-   return deep2()
-}
+// function deep3() {
+//    return deep2()
+// }
 
-const x = deep3()
+// const x = deep3().match({
+//    ok: (value) => {
+//       return value
+//    },
+//    err: (err) => {
+//       return err
+//    },
+// })
 
-if (x.isErr()) {
-   console.log(x.value)
-}
+// if (x.isErr()) {
+//    console.log(x.value)
+// }
