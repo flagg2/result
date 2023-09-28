@@ -1,7 +1,7 @@
 /**
  * A type representing the result of a computation that may succeed or fail.
  */
-export type Result<T, E = null> = Ok<T> | Err<E>
+export type Result<T, E = null> = Ok<T, E> | Err<T, E>
 
 function isPromise<T>(value: unknown): value is Promise<T> {
    return (
@@ -20,7 +20,7 @@ export namespace Result {
     * @typeparam T The type of the value contained in the `Ok`.
     * @param value The value to contain in the `Ok`.
     */
-   export function ok<T>(value: T): Ok<T> {
+   export function ok<T, E>(value: T): Ok<T, E> {
       return new Ok(value)
    }
 
@@ -31,10 +31,10 @@ export namespace Result {
     * @param errValue The value to contain in the `Err`.
     * @param origin An optional error to contain in the `Err`.
     */
-   export function err<const E = null>(
+   export function err<T, const E = null>(
       errValue: E = null as E,
       origin?: unknown,
-   ): Err<E> {
+   ): Err<T, E> {
       return new Err(errValue, origin)
    }
 
@@ -112,7 +112,7 @@ export abstract class _Result<T, E> {
     * Returns `true` if the result is an `Ok` variant.
     */
 
-   public isOk(): this is Ok<T> {
+   public isOk(): this is Ok<T, E> {
       return this instanceof Ok
    }
 
@@ -120,7 +120,7 @@ export abstract class _Result<T, E> {
     * Returns `true` if the result is an `Err` variant.
     */
 
-   public isErr(): this is Err<E> {
+   public isErr(): this is Err<T, E> {
       return this instanceof Err
    }
 
@@ -182,7 +182,7 @@ export abstract class _Result<T, E> {
     * @param fn The function to call if the result is an `Ok`.
     */
 
-   public abstract andThen<U>(fn: (value: T) => Result<U>): unknown
+   public abstract andThen<U>(fn: (value: T) => Result<U, E>): unknown
 
    /**
     * Maps a `Result<T, E>` to `Result<U, E>` by applying a function to a contained `Ok` value, leaving an `Err` value untouched.
@@ -206,7 +206,7 @@ export abstract class _Result<T, E> {
  *
  * @typeparam T The type of the value contained in the `Ok`.
  */
-export class Ok<T> extends _Result<T, never> {
+export class Ok<T, E> extends _Result<T, E> {
    public readonly value: T
 
    public constructor(value: T) {
@@ -238,11 +238,11 @@ export class Ok<T> extends _Result<T, never> {
       return fn.ok(this.value)
    }
 
-   public andThen<U>(fn: (data: T) => Result<U>): Result<U> {
+   public andThen<U>(fn: (data: T) => Result<U, E>): Result<U, E> {
       return fn(this.value)
    }
 
-   public map<U>(fn: (data: T) => U): Ok<U> {
+   public map<U>(fn: (data: T) => U): Ok<U, E> {
       return Result.ok(fn(this.value))
    }
 
@@ -256,7 +256,7 @@ export class Ok<T> extends _Result<T, never> {
  *
  * @typeparam E The type of the value contained in the `Err`.
  */
-export class Err<const E> extends _Result<never, E> {
+export class Err<T, const E> extends _Result<T, E> {
    public readonly errValue: E
    public readonly origin: Error
 
@@ -302,29 +302,29 @@ export class Err<const E> extends _Result<never, E> {
       return this
    }
 
-   public mapErr<const F>(fn: (errValue: E) => F): Err<F> {
+   public mapErr<const F>(fn: (errValue: E) => F): Err<T, F> {
       return Result.err(fn(this.errValue), this.origin)
    }
 }
 
-// function deep1() {
-//    return Result.from(() => {
-//       throw new Error("deep1")
-//       return 1
-//    }, "deep1")
-// }
+function x(s: number) {
+   if (s > 2) {
+      return Result.ok(2)
+   }
 
-// function deep2() {
-//    return deep1().mapErr((err) => {
-//       return err
-//    })
-// }
+   if (s === 2) {
+      return Result.err("s")
+   }
 
-// function deep3() {
-//    return deep2()
-// }
+   return Result.err({
+      code: "FETCH_ERROR",
+      status: 404,
+   })
+}
 
-// const x = deep3().match({
+// const result = x(2)
+
+// const c = result.match({
 //    ok: (value) => {
 //       return value
 //    },
@@ -332,7 +332,3 @@ export class Err<const E> extends _Result<never, E> {
 //       return err
 //    },
 // })
-
-// if (x.isErr()) {
-//    console.log(x.value)
-// }

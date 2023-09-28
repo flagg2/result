@@ -1,5 +1,29 @@
 # @flagg2/result
 
+## 1.5.5
+
+### Patch Changes
+
+-  fix andthen
+
+## 1.5.4
+
+### Patch Changes
+
+-  use 2 generics
+
+## 1.5.3
+
+### Patch Changes
+
+-  try unknown instead of never
+
+## 1.5.2
+
+### Patch Changes
+
+-  allow unions in match return
+
 ## 1.5.1
 
 ### Patch Changes

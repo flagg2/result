@@ -1,6 +1,6 @@
 {
    "name": "@flagg2/result",
-   "version": "1.5.1",
+   "version": "1.5.5",
    "description": "A type-safe rust-like result type for TypeScript",
    "main": "dist/index.js",
    "module": "dist/index.mjs",
