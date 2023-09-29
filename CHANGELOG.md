@@ -1,5 +1,24 @@
 # @flagg2/result
 
+## 1.5.9
+
+### Patch Changes
+
+-  fix andthen
+
+## 1.5.7
+
+### Patch Changes
+
+-  revert andthen
+-  revert andthen changes
+
+## 1.5.6
+
+### Patch Changes
+
+-  fix andThen
+
 ## 1.5.5
 
 ### Patch Changes

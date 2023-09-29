@@ -1,6 +1,6 @@
 {
    "name": "@flagg2/result",
-   "version": "1.5.5",
+   "version": "1.5.9",
    "description": "A type-safe rust-like result type for TypeScript",
    "main": "dist/index.js",
    "module": "dist/index.mjs",
@@ -24,13 +24,12 @@
    ],
    "author": "",
    "license": "MIT",
-   "dependencies": {},
    "devDependencies": {
       "@changesets/cli": "^2.26.2",
-      "dotenv": "^16.0.3",
       "@types/node": "^18.13.0",
       "@typescript-eslint/eslint-plugin": "^5.51.0",
       "@typescript-eslint/parser": "^5.51.0",
+      "dotenv": "^16.0.3",
       "eslint": "^8.33.0",
       "eslint-config-standard-with-typescript": "^34.0.0",
       "eslint-plugin-import": "^2.27.5",

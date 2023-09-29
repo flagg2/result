@@ -1,7 +1,9 @@
+import { Merged } from "./helpers"
+
 /**
  * A type representing the result of a computation that may succeed or fail.
  */
-export type Result<T, E = null> = Ok<T, E> | Err<T, E>
+export type Result<T, E> = Ok<T> | Err<E>
 
 function isPromise<T>(value: unknown): value is Promise<T> {
    return (
@@ -20,7 +22,7 @@ export namespace Result {
     * @typeparam T The type of the value contained in the `Ok`.
     * @param value The value to contain in the `Ok`.
     */
-   export function ok<T, E>(value: T): Ok<T, E> {
+   export function ok<T, E>(value: T): Ok<T> {
       return new Ok(value)
    }
 
@@ -31,10 +33,10 @@ export namespace Result {
     * @param errValue The value to contain in the `Err`.
     * @param origin An optional error to contain in the `Err`.
     */
-   export function err<T, const E = null>(
+   export function err<const E = null>(
       errValue: E = null as E,
       origin?: unknown,
-   ): Err<T, E> {
+   ): Err<E> {
       return new Err(errValue, origin)
    }
 
@@ -100,6 +102,18 @@ export namespace Result {
          return new Err(errValue, new Error(JSON.stringify(err)))
       }
    }
+
+   /**
+    * Sometimes type inference does not work well with Result unions. This can be the case when using
+    * {@link Result.andThen}, {@link Result.match}, {@link Result.map}, or {@link Result.mapErr}.
+    * When that happens, call this function to get a type that is easier to work with.
+    *
+    * @param result The result union to merge.
+    */
+
+   export function infer<T extends Result<any, any>>(result: T): Merged<T> {
+      return result as Merged<T>
+   }
 }
 
 // Note: some of the type signatures are a bit loose in order to get better type inference
@@ -112,7 +126,7 @@ export abstract class _Result<T, E> {
     * Returns `true` if the result is an `Ok` variant.
     */
 
-   public isOk(): this is Ok<T, E> {
+   public isOk(): this is Ok<T> {
       return this instanceof Ok
    }
 
@@ -120,7 +134,7 @@ export abstract class _Result<T, E> {
     * Returns `true` if the result is an `Err` variant.
     */
 
-   public isErr(): this is Err<T, E> {
+   public isErr(): this is Err<E> {
       return this instanceof Err
    }
 
@@ -166,6 +180,7 @@ export abstract class _Result<T, E> {
 
    /**
     * Calls an appropriate function based on the result based on if it is an `Ok` or an `Err`.
+    * In order to get type inference, you need to call {@link Result.infer} before calling `match`,
     *
     * @param fn.ok The function to call if the result is an `Ok`.
     * @param fn.err The function to call if the result is an `Err`.
@@ -178,6 +193,8 @@ export abstract class _Result<T, E> {
 
    /**
     * Calls op if the result is Ok, otherwise returns the Err value of self.
+    * In order to get type inference, you need to cast the result to `Merged` before calling `andThen`,
+    * see {@link Merged}
     *
     * @param fn The function to call if the result is an `Ok`.
     */
@@ -206,7 +223,7 @@ export abstract class _Result<T, E> {
  *
  * @typeparam T The type of the value contained in the `Ok`.
  */
-export class Ok<T, E> extends _Result<T, E> {
+export class Ok<T> extends _Result<T, unknown> {
    public readonly value: T
 
    public constructor(value: T) {
@@ -238,11 +255,11 @@ export class Ok<T, E> extends _Result<T, E> {
       return fn.ok(this.value)
    }
 
-   public andThen<U>(fn: (data: T) => Result<U, E>): Result<U, E> {
+   public andThen<U, V>(fn: (data: T) => Result<U, V>): Result<U, V> {
       return fn(this.value)
    }
 
-   public map<U>(fn: (data: T) => U): Ok<U, E> {
+   public map<U>(fn: (data: T) => U) {
       return Result.ok(fn(this.value))
    }
 
@@ -256,7 +273,7 @@ export class Ok<T, E> extends _Result<T, E> {
  *
  * @typeparam E The type of the value contained in the `Err`.
  */
-export class Err<T, const E> extends _Result<T, E> {
+export class Err<const E> extends _Result<unknown, E> {
    public readonly errValue: E
    public readonly origin: Error
 
@@ -294,7 +311,7 @@ export class Err<T, const E> extends _Result<T, E> {
       return fn.err(this.errValue)
    }
 
-   public andThen(fn: unknown): this {
+   public andThen<U, V>(fn: unknown): this {
       return this
    }
 
@@ -302,33 +319,7 @@ export class Err<T, const E> extends _Result<T, E> {
       return this
    }
 
-   public mapErr<const F>(fn: (errValue: E) => F): Err<T, F> {
+   public mapErr<const F>(fn: (errValue: E) => F): Err<F> {
       return Result.err(fn(this.errValue), this.origin)
    }
 }
-
-function x(s: number) {
-   if (s > 2) {
-      return Result.ok(2)
-   }
-
-   if (s === 2) {
-      return Result.err("s")
-   }
-
-   return Result.err({
-      code: "FETCH_ERROR",
-      status: 404,
-   })
-}
-
-// const result = x(2)
-
-// const c = result.match({
-//    ok: (value) => {
-//       return value
-//    },
-//    err: (err) => {
-//       return err
-//    },
-// })
