@@ -3,7 +3,7 @@ import { Merged } from "./helpers"
 /**
  * A type representing the result of a computation that may succeed or fail.
  */
-export type Result<T, E> = Ok<T> | Err<E>
+export type Result<T = null, E = null> = Ok<T> | Err<E>
 
 function isPromise<T>(value: unknown): value is Promise<T> {
    return (
@@ -22,7 +22,7 @@ export namespace Result {
     * @typeparam T The type of the value contained in the `Ok`.
     * @param value The value to contain in the `Ok`.
     */
-   export function ok<T, E>(value: T): Ok<T> {
+   export function ok<T = null>(value: T = null as T): Ok<T> {
       return new Ok(value)
    }
 
@@ -47,19 +47,19 @@ export namespace Result {
     *
     * @param fnOrPromise A function, a promise, or a promise-returning function.
     */
-   export function from<T, const E>(
+   export function from<T, const E = null>(
       fnOrPromise: Promise<T> | (() => Promise<T>),
       errValue?: E,
    ): Promise<Result<T, E>>
 
-   export function from<T, const E>(
+   export function from<T, const E = null>(
       fnOrPromise: () => T,
       errValue?: E,
    ): Result<T, E>
 
-   export function from<T, const E>(
+   export function from<T, const E = null>(
       fnOrPromise: (() => T | Promise<T>) | Promise<T>,
-      errValue = null as E,
+      errValue: E = null as E,
    ): Result<T, E> | Promise<Result<T, E>> {
       try {
          if (isPromise<T>(fnOrPromise)) {
@@ -223,10 +223,10 @@ export abstract class _Result<T, E> {
  *
  * @typeparam T The type of the value contained in the `Ok`.
  */
-export class Ok<T> extends _Result<T, unknown> {
+export class Ok<T = null> extends _Result<T, unknown> {
    public readonly value: T
 
-   public constructor(value: T) {
+   public constructor(value: T = null as T) {
       super()
       this.value = value
    }
@@ -273,7 +273,7 @@ export class Ok<T> extends _Result<T, unknown> {
  *
  * @typeparam E The type of the value contained in the `Err`.
  */
-export class Err<const E> extends _Result<unknown, E> {
+export class Err<const E = null> extends _Result<unknown, E> {
    public readonly errValue: E
    public readonly origin: Error
 
@@ -322,4 +322,10 @@ export class Err<const E> extends _Result<unknown, E> {
    public mapErr<const F>(fn: (errValue: E) => F): Err<F> {
       return Result.err(fn(this.errValue), this.origin)
    }
+}
+
+function test() {
+   const result = Result.from(() => 2)
+
+   result
 }
