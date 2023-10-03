@@ -1,5 +1,11 @@
 # @flagg2/result
 
+## 1.6.1
+
+### Patch Changes
+
+-  use null as defaults
+
 ## 1.6.0
 
 ### Minor Changes
