@@ -1,6 +1,6 @@
 {
    "name": "@flagg2/result",
-   "version": "1.5.9",
+   "version": "1.6.0",
    "description": "A type-safe rust-like result type for TypeScript",
    "main": "dist/index.js",
    "module": "dist/index.mjs",
@@ -24,6 +24,10 @@
    ],
    "author": "",
    "license": "MIT",
+   "repository": {
+      "type": "git",
+      "url": "https://github.com/flagg2/result"
+   },
    "devDependencies": {
       "@changesets/cli": "^2.26.2",
       "@types/node": "^18.13.0",

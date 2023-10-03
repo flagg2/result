@@ -157,20 +157,20 @@ A class representing a failed computation.
 
 ### Result.ok()
 
-Creates a new `Ok` variant;
+Creates a new `Ok` variant; If no value is provided, it defaults to `null`.
 
 ```typescript
- static ok(value: T): Ok<T>
+ static ok<T>(value?: T): Ok<T>
 ```
 
 ---
 
 ### Result.err()
 
-Creates a new `Err` variant; Optionally takes an `origin` argument which is the original error that was thrown.
+Creates a new `Err` variant. If no value is provided, it defaults to `null`. Optionally takes an `origin` argument which is the original error that was thrown.
 
 ```typescript
- static err(errValue: E, origin?: Error): Err<E>
+ static err<E>(errValue?: E, origin?: Error): Err<E>
 ```
 
 ---
@@ -178,10 +178,14 @@ Creates a new `Err` variant; Optionally takes an `origin` argument which is the 
 ### Result.from()
 
 ```typescript
- static from<T>(fnOrThenable: Promise<T>): Promise<Result<T>>
+ static from<T, E>(fnOrThenable: (() => T | Promise<T>) | Promise<T>, errValue?: E): Promise<Result<T>>
 ```
 
-Creates a `Result` from a function, a promise, or a promise-returning function. If an error is thrown at any point, it is caught and wrapped in an `Err`. Otherwise, the result is wrapped in an `Ok`.
+Creates a `Result` from a function, a promise, or a promise-returning function.
+
+If an error is thrown at any point, it is caught and wrapped in an `Err`. Takes an optional `errValue` argument which will be the value contained in the `Err` variant. The `origin` property of the `Err` will be the original error that was thrown.
+
+If the function or promise resolves successfully, the value will be wrapped in an `Ok`.
 
 ---
 
@@ -292,6 +296,20 @@ Maps a `Result<T, E>` to `Result<T, F>` by applying a function to a contained `E
 ```typescript
    mapErr<F>(fn: (errValue: E) => F): Result<T, F>
 ```
+
+---
+
+### Result.infer()
+
+```typescript
+ static infer<T extends Result>(result: T): T
+```
+
+Sometimes type inference does not work well with `Result` unions. You might notice that your arguments are being inferred as `any` or that the return types are not correct.
+
+This can be the case when using [andThen](#Result.andThen) , [map](#Result.map) , [mapErr](#Result.mapErr) , or [match](#Result.match) .
+
+When this happens, call this function to get a type that is easier to work with.
 
 ## Ok
 

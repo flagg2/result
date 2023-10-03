@@ -1,5 +1,11 @@
 # @flagg2/result
 
+## 1.6.0
+
+### Minor Changes
+
+-  improve types
+
 ## 1.5.9
 
 ### Patch Changes
