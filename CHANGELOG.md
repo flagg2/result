@@ -1,5 +1,11 @@
 # @flagg2/result
 
+## 1.6.2
+
+### Patch Changes
+
+-  add promise compatibility to andThen
+
 ## 1.6.1
 
 ### Patch Changes

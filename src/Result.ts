@@ -255,7 +255,10 @@ export class Ok<T = null> extends _Result<T, unknown> {
       return fn.ok(this.value)
    }
 
-   public andThen<U, V>(fn: (data: T) => Result<U, V>): Result<U, V> {
+   public andThen<U, V>(fn: (data: T) => Result<U, V>): Result<U, V>;
+   public andThen<U, V>(fn: (data: T) => Promise<Result<U, V>>): Promise<Result<U, V>>;
+
+   public andThen<U, V>(fn: (data: T) => Result<U, V> |  Promise<Result<U, V>>): Result<U, V> | Promise<Result<U, V>>{
       return fn(this.value)
    }
 

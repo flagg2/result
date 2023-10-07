@@ -71,3 +71,29 @@ function err() {
       x.isAny
    })
 }
+
+function testPromise(): Promise<Result<number, "TEST">> {
+   return 0 as any
+}
+
+async function asyncTest() {
+   const result = await testPromise()
+
+   const value = result.andThen(async (x) => {
+      if (x > 0) {
+         return Result.ok(x + 2)
+      }
+      return testPromise()
+   })
+
+   // @ts-expect-error
+   value.isAny
+
+   const awaited = await value
+
+   // is number
+   awaited.unwrap().toFixed()
+
+   // is string
+   awaited.unwrapErr().charAt(0)
+}
