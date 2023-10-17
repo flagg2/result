@@ -285,8 +285,10 @@ export class Err<const E = null> extends _Result<unknown, E> {
       this.errValue = errValue
       if (origin instanceof Error) {
          this.origin = origin
+      } else if (origin !== undefined) {
+         this.origin = new Error(JSON.stringify(origin))
       } else {
-         this.origin = new Error("Unspecified error")
+         this.origin = new Error(JSON.stringify(errValue))
       }
    }
 
@@ -325,10 +327,13 @@ export class Err<const E = null> extends _Result<unknown, E> {
    public mapErr<const F>(fn: (errValue: E) => F): Err<F> {
       return Result.err(fn(this.errValue), this.origin)
    }
-}
 
-function test() {
-   const result = Result.from(() => 2)
+   public log(): this {
+      console.error(`Err: ${this.errValue} with origin ${this.origin.stack}`)
+      return this
+   }
 
-   result
+   public toString(): string {
+      return `Err: ${this.errValue} with origin ${this.origin.stack}`
+   }
 }

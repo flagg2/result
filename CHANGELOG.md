@@ -1,5 +1,11 @@
 # @flagg2/result
 
+## 1.6.3
+
+### Patch Changes
+
+-  add logging to error
+
 ## 1.6.2
 
 ### Patch Changes
