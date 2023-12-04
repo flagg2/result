@@ -104,6 +104,58 @@ export namespace Result {
    }
 
    /**
+    * Wraps a function that returns a `Result` but may still throw an error, in which case it is caught and wrapped in
+    * an `Err` with the provided error value.
+    *
+    * A good example of when you would use this is when communicating with a database. You can have a generic error
+    * for when the communication fails, but you can also have more specific errors for constraint violations, etc.
+    *
+    * Does not yet work with type unions as T because of weird ts behavior
+    *
+    * @param fn The function to wrap.
+    * @param errValue The error value to use if the function throws an error.
+    */
+
+   export function tryCatch<T, const E = null>(
+      fn: () => Promise<Result<T, E>>,
+      errValue?: E,
+   ): Promise<Result<T, E>>
+
+   export function tryCatch<T, const E = null>(
+      fn: () => Result<T, E>,
+      errValue?: E,
+   ): Result<T, E>
+
+   export function tryCatch<T, const E = null>(
+      fn: () => Result<T, E> | Promise<Result<T, E>>,
+      errValue: E = null as E,
+   ): Result<T, E> | Promise<Result<T, E>> {
+      try {
+         const result = fn()
+         if (isPromise<Result<T, E>>(result)) {
+            return new Promise<Result<T, E>>((resolve) => {
+               result
+                  .then((data) => {
+                     resolve(data)
+                  })
+                  .catch((err) => {
+                     if (err instanceof Error) {
+                        resolve(new Err(errValue, err))
+                     }
+                     resolve(new Err(errValue, new Error(JSON.stringify(err))))
+                  })
+            })
+         }
+         return result
+      } catch (err) {
+         if (err instanceof Error) {
+            return new Err(errValue, err)
+         }
+         return new Err(errValue, new Error(JSON.stringify(err)))
+      }
+   }
+
+   /**
     * Sometimes type inference does not work well with Result unions. This can be the case when using
     * {@link Result.andThen}, {@link Result.match}, {@link Result.map}, or {@link Result.mapErr}.
     * When that happens, call this function to get a type that is easier to work with.
@@ -223,7 +275,7 @@ export abstract class _Result<T, E> {
  *
  * @typeparam T The type of the value contained in the `Ok`.
  */
-export class Ok<T = null> extends _Result<T, unknown> {
+export class Ok<const T = null> extends _Result<T, unknown> {
    public readonly value: T
 
    public constructor(value: T = null as T) {
@@ -255,10 +307,14 @@ export class Ok<T = null> extends _Result<T, unknown> {
       return fn.ok(this.value)
    }
 
-   public andThen<U, V>(fn: (data: T) => Result<U, V>): Result<U, V>;
-   public andThen<U, V>(fn: (data: T) => Promise<Result<U, V>>): Promise<Result<U, V>>;
+   public andThen<U, V>(fn: (data: T) => Result<U, V>): Result<U, V>
+   public andThen<U, V>(
+      fn: (data: T) => Promise<Result<U, V>>,
+   ): Promise<Result<U, V>>
 
-   public andThen<U, V>(fn: (data: T) => Result<U, V> |  Promise<Result<U, V>>): Result<U, V> | Promise<Result<U, V>>{
+   public andThen<U, V>(
+      fn: (data: T) => Result<U, V> | Promise<Result<U, V>>,
+   ): Result<U, V> | Promise<Result<U, V>> {
       return fn(this.value)
    }
 
@@ -327,6 +383,12 @@ export class Err<const E = null> extends _Result<unknown, E> {
    public mapErr<const F>(fn: (errValue: E) => F): Err<F> {
       return Result.err(fn(this.errValue), this.origin)
    }
+
+   /**
+    * Logs the error to the console.
+    *
+    * @returns this
+    */
 
    public log(): this {
       console.error(`Err: ${this.errValue} with origin ${this.origin.stack}`)
