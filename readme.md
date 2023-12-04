@@ -299,17 +299,33 @@ Maps a `Result<T, E>` to `Result<T, F>` by applying a function to a contained `E
 
 ---
 
-### Result.infer()
+### Result.tryCatch()
+
+Wraps a function that returns a `Result` but may still throw an error, in which case it is caught and wrapped in
+an `Err` with the provided error value.
+
+A good example of when you would use this is when communicating with a database. You can have a generic error
+for when the communication fails, but you can also have more specific errors for constraint violations, etc.
+
+Does not yet work with type unions as T because of weird ts behavior
 
 ```typescript
- static infer<T extends Result>(result: T): T
+ static tryCatch<T, E>(fn: () => Result<T,E> | Promise<Result<T,E>>, errValue?: E): Result<T, E>
 ```
+
+---
+
+### Result.infer()
 
 Sometimes type inference does not work well with `Result` unions. You might notice that your arguments are being inferred as `any` or that the return types are not correct.
 
 This can be the case when using [andThen](#Result.andThen) , [map](#Result.map) , [mapErr](#Result.mapErr) , or [match](#Result.match) .
 
 When this happens, call this function to get a type that is easier to work with.
+
+```typescript
+ static infer<T extends Result>(result: T): T
+```
 
 ## Ok
 
@@ -341,4 +357,12 @@ The original error that was thrown.
 
 ```typescript
 origin: Error
+```
+
+### Err.log()
+
+Logs the error to the console.
+
+```typescript
+   log(): this
 ```
