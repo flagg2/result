@@ -1,4 +1,5 @@
 import { Merged } from "./helpers"
+import { possiblyAsyncTryCatch } from "./utils"
 
 /**
  * A type representing the result of a computation that may succeed or fail.
@@ -49,58 +50,39 @@ export namespace Result {
     */
    export function from<T, const E = null>(
       fnOrPromise: Promise<T> | (() => Promise<T>),
-      errValue?: E,
+      catchFn?: (err: Error) => E,
    ): Promise<Result<T, E>>
 
    export function from<T, const E = null>(
       fnOrPromise: () => T,
-      errValue?: E,
+      catchFn?: (err: Error) => E,
    ): Result<T, E>
 
    export function from<T, const E = null>(
-      fnOrPromise: (() => T | Promise<T>) | Promise<T>,
-      errValue: E = null as E,
+      fnOrPromise: (() => T) | (() => Promise<T>) | Promise<T>,
+      catchFn = (err: Error) => null as E,
    ): Result<T, E> | Promise<Result<T, E>> {
-      try {
-         if (isPromise<T>(fnOrPromise)) {
-            return new Promise<Result<T, E>>((resolve) => {
-               fnOrPromise
-                  .then((data) => {
-                     resolve(new Ok(data))
-                  })
-                  .catch((error) => {
-                     if (error instanceof Error) {
-                        resolve(new Err(errValue, error))
-                        return
-                     }
-                     resolve(
-                        new Err(errValue, new Error(JSON.stringify(error))),
-                     )
-                  })
-            })
-         }
-         const result = fnOrPromise()
-         if (isPromise<T>(result)) {
-            return new Promise<Result<T, E>>((resolve) => {
-               result
-                  .then((data) => {
-                     resolve(new Ok(data))
-                  })
-                  .catch((err) => {
-                     if (err instanceof Error) {
-                        resolve(new Err(errValue, err))
-                     }
-                     resolve(new Err(errValue, new Error(JSON.stringify(err))))
-                  })
-            })
-         }
-         return new Ok(result)
-      } catch (err) {
-         if (err instanceof Error) {
-            return new Err(errValue, err)
-         }
-         return new Err(errValue, new Error(JSON.stringify(err)))
-      }
+      const fn =
+         fnOrPromise instanceof Promise
+            ? () => {
+                 return fnOrPromise.then((value) => {
+                    return new Ok(value)
+                 })
+              }
+            : () => {
+                 const value = fnOrPromise()
+                 if (isPromise(value)) {
+                    return value.then((value) => {
+                       return new Ok(value)
+                    })
+                 }
+                 return new Ok(value)
+              }
+
+      // @ts-ignore
+      return possiblyAsyncTryCatch(fn, (err) => {
+         return new Err(catchFn(err), err)
+      })
    }
 
    /**
@@ -113,46 +95,26 @@ export namespace Result {
     * Does not yet work with type unions as T because of weird ts behavior
     *
     * @param fn The function to wrap.
-    * @param errValue The error value to use if the function throws an error.
+    * @param catchFn The error value to use if the function throws an error.
     */
 
    export function tryCatch<T, const E = null>(
       fn: () => Promise<Result<T, E>>,
-      errValue?: E,
+      catchFn?: (err: Error) => E,
    ): Promise<Result<T, E>>
 
    export function tryCatch<T, const E = null>(
       fn: () => Result<T, E>,
-      errValue?: E,
+      catchFn?: (err: Error) => E,
    ): Result<T, E>
 
    export function tryCatch<T, const E = null>(
       fn: () => Result<T, E> | Promise<Result<T, E>>,
-      errValue: E = null as E,
+      catchFn: (err: Error) => E = () => null as E,
    ): Result<T, E> | Promise<Result<T, E>> {
-      try {
-         const result = fn()
-         if (isPromise<Result<T, E>>(result)) {
-            return new Promise<Result<T, E>>((resolve) => {
-               result
-                  .then((data) => {
-                     resolve(data)
-                  })
-                  .catch((err) => {
-                     if (err instanceof Error) {
-                        resolve(new Err(errValue, err))
-                     }
-                     resolve(new Err(errValue, new Error(JSON.stringify(err))))
-                  })
-            })
-         }
-         return result
-      } catch (err) {
-         if (err instanceof Error) {
-            return new Err(errValue, err)
-         }
-         return new Err(errValue, new Error(JSON.stringify(err)))
-      }
+      return possiblyAsyncTryCatch(fn, (err) => {
+         return new Err(catchFn(err), err)
+      })
    }
 
    /**
@@ -323,6 +285,14 @@ export class Ok<const T = null> extends _Result<T, unknown> {
    }
 
    public mapErr(fn: unknown): this {
+      return this
+   }
+
+   public logIfErr(): this {
+      if (this.isErr()) {
+         this.log()
+      }
+
       return this
    }
 }

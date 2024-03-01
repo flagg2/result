@@ -80,7 +80,7 @@ describe("From", () => {
       expect(result.unwrap()).toBe(1)
    })
    it("Should be able to create Result from a function which returns a promise that throws", async () => {
-      const result = await Result.from(throwAfter100ms, "val")
+      const result = await Result.from(throwAfter100ms, () => "val")
       expect(result.isOk()).toBe(false)
       expect(result.isErr()).toBe(true)
       expect(result.unwrapErr()).toBe("val")
@@ -108,25 +108,49 @@ describe("TryCatch", () => {
       })
 
       it("Should return Err if it is the return value and fn does not throw", () => {
-         const result = Result.tryCatch(() => {
-            return Result.err("Error")
-         }, "val")
+         const result = Result.tryCatch(
+            () => {
+               return Result.err("Error")
+            },
+            () => "val",
+         )
          expect(result.isOk()).toBe(false)
          expect(result.isErr()).toBe(true)
          expect(result.unwrapErr()).toBe("Error")
       })
 
       it("Should return Err with correct value if fn throws", () => {
-         const result = Result.tryCatch(() => {
-            throw new MyError("Error")
-            return Result.ok("not_a_promise")
-         }, "val2")
+         const result = Result.tryCatch(
+            () => {
+               throw new MyError("Error")
+               return Result.ok("not_a_promise")
+            },
+            () => "val2",
+         )
          expect(result.isOk()).toBe(false)
          expect(result.isErr()).toBe(true)
          expect(result.unwrapErr()).toBe("val2")
          if (result.isErr()) {
             expect(result.origin).toBeInstanceOf(MyError)
          }
+      })
+      it("Should return Err with correct value based on parameter if fn throws", () => {
+         const result = Result.tryCatch(
+            () => {
+               throw new MyError("Error")
+               return Result.ok("not_a_promise")
+            },
+            (err: Error) => {
+               if (err instanceof MyError) {
+                  return "val3"
+               }
+               return "val4"
+            },
+         )
+
+         expect(result.isOk()).toBe(false)
+         expect(result.isErr()).toBe(true)
+         expect(result.unwrapErr()).toBe("val3")
       })
    })
    describe("Async", () => {
@@ -140,9 +164,12 @@ describe("TryCatch", () => {
       })
 
       it("Should return Err if it is the return value and fn throws", async () => {
-         const result = await Result.tryCatch(async () => {
-            return Result.err("Error")
-         }, "val3")
+         const result = await Result.tryCatch(
+            async () => {
+               return Result.err("Error")
+            },
+            () => "val3",
+         )
          expect(result.isOk()).toBe(false)
          expect(result.isErr()).toBe(true)
          expect(result.unwrapErr()).toBe("Error")
@@ -152,10 +179,13 @@ describe("TryCatch", () => {
       })
 
       it("Should return Err with correct value if fn throws", async () => {
-         const result = await Result.tryCatch(async () => {
-            throw new MyError("Error")
-            return Result.ok("promise")
-         }, "val4")
+         const result = await Result.tryCatch(
+            async () => {
+               throw new MyError("Error")
+               return Result.ok("promise")
+            },
+            () => "val4",
+         )
          expect(result.isOk()).toBe(false)
          expect(result.isErr()).toBe(true)
          expect(result.unwrapErr()).toBe("val4")

@@ -2,13 +2,16 @@ import { Result } from "../../src/Result"
 
 function simple() {
    const value: Result<number, "GENERIC_ERROR" | "SPECIFIC_ERROR"> =
-      Result.tryCatch(() => {
-         const x = 3
-         if (x > 0) {
-            return Result.ok(x)
-         }
-         return Result.err("SPECIFIC_ERROR")
-      }, "GENERIC_ERROR")
+      Result.tryCatch(
+         () => {
+            const x = 3
+            if (x > 0) {
+               return Result.ok(x)
+            }
+            return Result.err("SPECIFIC_ERROR")
+         },
+         () => "GENERIC_ERROR" as const,
+      )
 
    // @ts-expect-error
    value.isAny
@@ -18,16 +21,19 @@ function medium() {
    const value: Result<
       number,
       "GENERIC_ERROR" | "SPECIFIC_ERROR_1" | "SPECIFIC_ERROR_2"
-   > = Result.tryCatch(() => {
-      const x = 3
-      if (x > 0) {
-         return Result.ok(x)
-      }
-      if (x > 5) {
-         return Result.err("SPECIFIC_ERROR_1")
-      }
-      return Result.err("SPECIFIC_ERROR_2")
-   }, "GENERIC_ERROR")
+   > = Result.tryCatch(
+      () => {
+         const x = 3
+         if (x > 0) {
+            return Result.ok(x)
+         }
+         if (x > 5) {
+            return Result.err("SPECIFIC_ERROR_1")
+         }
+         return Result.err("SPECIFIC_ERROR_2")
+      },
+      () => "GENERIC_ERROR" as const,
+   )
 
    // @ts-expect-error
    value.isAny

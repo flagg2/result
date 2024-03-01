@@ -1,5 +1,17 @@
 # @flagg2/result
 
+## 1.7.0
+
+### Minor Changes
+
+-  change errValue to catchFn in form and tryCatch
+
+## 1.6.4
+
+### Patch Changes
+
+-  add tryCatch
+
 ## 1.6.3
 
 ### Patch Changes
